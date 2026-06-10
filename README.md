@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/Sotang_logo.png" alt="Sotang Logo" width="300"/>
+  <img src="/Sotang_logo.png" alt="Sotang Logo" width="300"/>
 </div>
 
 # 🏗️ Sotang Architecture - Documentación Académica
