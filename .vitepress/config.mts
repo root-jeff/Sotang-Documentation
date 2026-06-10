@@ -3,6 +3,7 @@ import { withMermaid } from "vitepress-plugin-mermaid";
 
 export default withMermaid(
   defineConfig({
+    base: '/', // Cambiar por '/NOMBRE_DEL_REPO/' si no es un dominio principal
     title: "Sotang Architecture",
     description: "Documentación oficial del ecosistema Sotang",
     head: [['link', { rel: 'icon', href: '/sotang_icon.png' }]],
