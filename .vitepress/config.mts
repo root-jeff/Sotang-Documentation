@@ -3,19 +3,30 @@ import { withMermaid } from "vitepress-plugin-mermaid";
 
 export default withMermaid(
   defineConfig({
+    // Configuración de despliegue para GitHub Pages
+    base: '/Sotang-Documentation/',
+    cleanUrls: true,
     srcExclude: ['**/README.md', '**/ROADMAP.md'],
-    base: '/', // Cambiar por '/NOMBRE_DEL_REPO/' si no es un dominio principal
+
     title: "Sotang Architecture",
     description: "Documentación oficial del ecosistema Sotang",
-    head: [['link', { rel: 'icon', href: '/sotang_icon.png' }]],
+    
+    // Icono de la pestaña (Favicon)
+    head: [
+      ['link', { rel: 'icon', href: '/Sotang-Documentation/sotang_icon.png' }]
+    ],
+
     themeConfig: {
+      // Logo en la barra de navegación
       logo: '/sotang_icon.png',
+      
       nav: [
         { text: "Inicio", link: "/" },
         { text: "Arquitectura", link: "/arquitectura/overview" },
         { text: "Base de Datos", link: "/base-de-datos/erd" },
         { text: "Requerimientos", link: "/requerimientos/overview" }
       ],
+
       sidebar: [
         {
           text: "Arquitectura",
@@ -49,6 +60,15 @@ export default withMermaid(
           ],
         },
       ],
+
+      socialLinks: [
+        { icon: 'github', link: 'https://github.com/root-jeff/Sotang-Documentation' }
+      ],
+
+      footer: {
+        message: 'Arquitectura de Software - Universidad de Guayaquil',
+        copyright: 'Copyright © 2026-present Jefferson Palma'
+      }
     },
   }),
 );
