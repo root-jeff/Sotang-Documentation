@@ -57,6 +57,7 @@ export default withMermaid(
           text: "Patrones de Diseño",
           items: [
             { text: "Ejemplos Prácticos", link: "/patrones/intro" },
+            { text: "Patrones GoF", link: "/patrones/introv2" },
             // { text: "App Interactiva", link: "/patrones/app" },
           ],
         },
