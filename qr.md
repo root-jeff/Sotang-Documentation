@@ -11,7 +11,7 @@ layout: page
   </div>
 
   <div style="padding: 1rem; background: var(--vp-c-bg-soft); border: 1px solid var(--vp-c-divider); border-radius: 20px;">
-    <img src="./qr.png" alt="QR Documentación Sotang" style="width: 220px; height: 220px; display: block; border-radius: 10px;" />
+    <img src="/qr.png" alt="QR Documentación Sotang" style="width: 220px; height: 220px; display: block; border-radius: 10px;" />
   </div>
 
   <div style="display: flex; flex-direction: column; gap: 0.3rem;">
