@@ -1,4 +1,4 @@
-﻿<div align="center">
+<div align="center">
   <img src="assets/Sotang_logo.png" alt="Sotang Logo" width="300"/>
 </div>
 
@@ -23,32 +23,32 @@ El sitio de documentación está construido con [VitePress](https://vitepress.de
 Para visualizar este sitio de documentación en tu máquina local, necesitas tener instalado [Node.js](https://nodejs.org/).
 
 1. **Clonar el repositorio:**
-   \\\ash
+   ```bash
    git clone <tu-url-del-repo>
    cd SotangDocWeb
-   \\\
+   ```
 
 2. **Instalar dependencias:**
-   \\\ash
+   ```bash
    npm install
-   \\\
+   ```
 
 3. **Iniciar el servidor de desarrollo:**
-   \\\ash
+   ```bash
    npm run docs:dev
-   \\\
+   ```
 
 4. **Ver el sitio:**
-   Abre tu navegador y dirígete a \http://localhost:5173\
+   Abre tu navegador y dirígete a http://localhost:5173
 
 ## 🛠️ Construcción para Producción (Build)
 
 Para generar los archivos estáticos HTML/CSS y desplegar el sitio en plataformas como GitHub Pages, Vercel o Netlify:
 
-\\\ash
+```bash
 npm run docs:build
-\\\
-Los archivos generados se encontrarán en el directorio \.vitepress/dist\.
+```
+Los archivos generados se encontrarán en el directorio .vitepress/dist.
 
 ## 📚 Stack de la Documentación
 
