@@ -1,7 +1,7 @@
 # Patrones de Diseño — Módulo de Cuentas
 ### Proyecto Sotang · Arquitectura de Software
 
-> Este documento aplica **5 patrones GoF** al módulo `accounts/` de Sotang, un backend de finanzas personales construido con **FastAPI + Python**. Para cada patrón se muestra el problema real, el código problemático *antes* del patrón, y la solución implementada.
+> Este documento aplica **5 patrones GoF**al módulo `accounts/` de Sotang, un backend de finanzas personales construido con **FastAPI + Python**. Para cada patrón se muestra el problema real, el código problemático *antes* del patrón, y la solución implementada.
 
 
 
@@ -34,7 +34,7 @@ Cada tipo de cuenta tiene **tablas satélite distintas**. Eso complica la creaci
 ## Resumen de los 5 Patrones
 
 | # | Patrón | Categoría | Problema que resuelve |
-||--|--|-|
+|---|---------|------------|----------------------|
 | 1 | Factory Method | Creacional | Crear distintos tipos de cuenta sin acoplar el controlador |
 | 2 | Strategy | Comportamiento | Calcular el patrimonio neto con lógica distinta por tipo |
 | 3 | Facade | Estructural | Simplificar el endpoint del dashboard para el frontend |
@@ -52,11 +52,11 @@ Cada tipo de cuenta tiene **tablas satélite distintas**. Eso complica la creaci
 
 Cuando el usuario registra una cuenta nueva, el `POST /api/v1/accounts/` recibe un payload distinto según el tipo:
 
-- **banco** → solo insertar en `cuentas`
-- **tarjeta** → insertar en `cuentas` + `tarjetas_config`
-- **cripto** → insertar en `cuentas` + `cripto_config` + obtener UUID con `flush()`
+- **banco**→ solo insertar en `cuentas`
+- **tarjeta**→ insertar en `cuentas` + `tarjetas_config`
+- **cripto**→ insertar en `cuentas` + `cripto_config` + obtener UUID con `flush()`
 
-** Sin patrón — el controlador sabe demasiado:**
+**Sin patrón — el controlador sabe demasiado:**
 
 ```python
 # router.py — ANTES (código acoplado y frágil)
@@ -82,11 +82,11 @@ def create_new_account(payload: AccountCreateSchema, db: Session = Depends(get_d
     return db_account
 ```
 
-> **El problema:** El controlador viola el *Single Responsibility Principle*. Conoce las tablas, el orden de los inserts, y el `flush()`. Agregar un nuevo tipo de cuenta obliga a editar el router.
+> **El problema:**El controlador viola el *Single Responsibility Principle*. Conoce las tablas, el orden de los inserts, y el `flush()`. Agregar un nuevo tipo de cuenta obliga a editar el router.
 
 
 
-** Con Factory Method — el router queda limpio:**
+**Con Factory Method — el router queda limpio:**
 
 ```python
 from abc import ABC, abstractmethod
@@ -167,7 +167,7 @@ CryptoAccountCreator.create_account(db, data, user_id)
 ```
 
 ### Por qué no Abstract Factory
-> Abstract Factory crea **familias** de objetos relacionados. Aquí solo hay un producto: la cuenta. No necesitamos un factory para la cuenta + su repositorio + su validador al mismo tiempo. Factory Method es la solución más simple que resuelve el problema.
+> Abstract Factory crea **familias**de objetos relacionados. Aquí solo hay un producto: la cuenta. No necesitamos un factory para la cuenta + su repositorio + su validador al mismo tiempo. Factory Method es la solución más simple que resuelve el problema.
 
 
 
@@ -178,15 +178,15 @@ CryptoAccountCreator.create_account(db, data, user_id)
 
 ### El problema real
 
-El Dashboard necesita calcular el **Patrimonio Neto** sumando todas las cuentas del usuario. Pero cada tipo tiene una lógica distinta:
+El Dashboard necesita calcular el **Patrimonio Neto**sumando todas las cuentas del usuario. Pero cada tipo tiene una lógica distinta:
 
 | Tipo de cuenta | Lógica de cálculo |
-|||
+|----------------|-------------------|
 | Banco / ahorro | `+saldo_actual` (valor positivo) |
 | Tarjeta de crédito | `-saldo_actual` (es una deuda) |
 | Cripto | `cantidad × precio_actual_usd` |
 
-** Sin patrón — lógica mezclada:**
+**Sin patrón — lógica mezclada:**
 
 ```python
 # ANTES — difícil de testear, difícil de extender
@@ -205,7 +205,7 @@ def calculate_net_worth(accounts: list) -> float:
 
 
 
-** Con Strategy — cada algoritmo es un objeto independiente y testeable:**
+**Con Strategy — cada algoritmo es un objeto independiente y testeable:**
 
 ```python
 from abc import ABC, abstractmethod
@@ -269,14 +269,14 @@ def test_credit_card_is_negative():
     assert result == -500.0   #  la deuda resta al patrimonio
 ```
 
-> **La diferencia con un if/else:** cada estrategia es una clase independiente, inyectable y testeable por separado. La estrategia también puede cambiar **en runtime** — por ejemplo, si el usuario cambia la moneda base del dashboard de USD a EUR.
+> **La diferencia con un if/else:**cada estrategia es una clase independiente, inyectable y testeable por separado. La estrategia también puede cambiar **en runtime**— por ejemplo, si el usuario cambia la moneda base del dashboard de USD a EUR.
 
 
 
 ## 3. Facade — Patrón Estructural
 
 ### Concepto
-> Proporciona una **interfaz unificada** a un conjunto de interfaces de un subsistema. Hace el subsistema más fácil de usar desde afuera.
+> Proporciona una **interfaz unificada**a un conjunto de interfaces de un subsistema. Hace el subsistema más fácil de usar desde afuera.
 
 ### El problema real
 
@@ -290,9 +290,9 @@ Cuando el frontend navega a `/accounts`, necesita un JSON complejo con todo:
 }
 ```
 
-Eso requiere **4 o 5 consultas SQL** a repositorios distintos.
+Eso requiere **4 o 5 consultas SQL**a repositorios distintos.
 
-** Sin patrón — el router hace demasiado:**
+**Sin patrón — el router hace demasiado:**
 
 ```python
 # ANTES — el controlador viola Single Responsibility
@@ -327,7 +327,7 @@ def get_account_summary(db: Session = Depends(get_db), user = Depends(get_curren
 
 
 
-** Con Facade — el router tiene una sola responsabilidad:**
+**Con Facade — el router tiene una sola responsabilidad:**
 
 ```python
 class AccountDashboardFacade:
@@ -393,7 +393,7 @@ Frontend  →  GET /accounts/summary
 ## 4. Adapter — Patrón Estructural
 
 ### Concepto
-> **Convierte la interfaz** de una clase en otra que los clientes esperan. Permite que clases con interfaces incompatibles trabajen juntas.
+> **Convierte la interfaz**de una clase en otra que los clientes esperan. Permite que clases con interfaces incompatibles trabajen juntas.
 
 ### El problema real
 
@@ -403,7 +403,7 @@ El worker de Celery (`workers/crypto_prices.py`) actualiza precios cripto perió
 { "bitcoin": { "usd": 65000.5 } }
 ```
 
-** Sin patrón — acoplado a CoinGecko:**
+**Sin patrón — acoplado a CoinGecko:**
 
 ```python
 # ANTES — el worker conoce los detalles de CoinGecko
@@ -425,7 +425,7 @@ def update_crypto_prices_task():
 
 
 
-** Con Adapter — el worker solo conoce la interfaz interna:**
+**Con Adapter — el worker solo conoce la interfaz interna:**
 
 ```python
 from abc import ABC, abstractmethod
@@ -493,17 +493,17 @@ get_price_in_usd("btc")   GET /simple/price?ids=btc&vs_currencies=usd
 ## 5. Observer — Patrón de Comportamiento
 
 ### Concepto
-> Define una dependencia **uno-a-muchos** entre objetos: cuando un objeto cambia de estado, **todos sus dependientes son notificados automáticamente**.
+> Define una dependencia **uno-a-muchos**entre objetos: cuando un objeto cambia de estado, **todos sus dependientes son notificados automáticamente**.
 
 ### El problema real
 
 Al registrar una nueva transacción, múltiples cosas deben ocurrir:
 
-1. El **saldo** de la cuenta debe actualizarse (`accounts` module)
+1. El **saldo**de la cuenta debe actualizarse (`accounts` module)
 2. Si la cuenta tiene una **meta de ahorro**, el progreso se recalcula (`goals` module)
-3. (futuro) Enviar una **notificación push** al usuario
+3. (futuro) Enviar una **notificación push**al usuario
 
-** Sin patrón — alto acoplamiento inter-módulo:**
+**Sin patrón — alto acoplamiento inter-módulo:**
 
 ```python
 # transactions/service.py — ANTES
@@ -522,11 +522,11 @@ def create_transaction(db_session, txn_data: dict):
     # NotificationService.send(...)   ← hay que agregar otro import
 ```
 
-> **El problema:** El módulo `transactions` depende explícitamente de `accounts` y `goals`. Cualquier cambio en esos módulos puede romper este archivo.
+> **El problema:**El módulo `transactions` depende explícitamente de `accounts` y `goals`. Cualquier cambio en esos módulos puede romper este archivo.
 
 
 
-** Con Observer — los módulos no se conocen entre sí:**
+**Con Observer — los módulos no se conocen entre sí:**
 
 ```python
 # 1. El Gestor de Eventos (Event Bus)
@@ -589,9 +589,9 @@ transactions ──► notifications                    ┌───────
                                              (cada uno se suscribe solo)
 ```
 
-> **¿Observer no es solo un callback?** Un callback es una referencia directa al receptor. Observer es un sistema de suscripción formal donde el emisor **no conoce** a los receptores. Puedes agregar o quitar observadores sin tocar el código que emite el evento.
+> **¿Observer no es solo un callback?**Un callback es una referencia directa al receptor. Observer es un sistema de suscripción formal donde el emisor **no conoce**a los receptores. Puedes agregar o quitar observadores sin tocar el código que emite el evento.
 
-> **Desventaja real:** el flujo es menos visible al debuggear. Mitigación: el `EventManager` debe registrar logs de qué observadores notificó y en qué orden.
+> **Desventaja real:**el flujo es menos visible al debuggear. Mitigación: el `EventManager` debe registrar logs de qué observadores notificó y en qué orden.
 
 
 
@@ -629,7 +629,7 @@ transactions ──► notifications                    ┌───────
 ```
 
 | Categoría GoF | Patrones aplicados |
-||--|
+|---------------|-------------------|
 | Creacional | Factory Method |
 | Estructural | Facade · Adapter |
 | Comportamiento | Strategy · Observer |
