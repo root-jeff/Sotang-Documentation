@@ -1,4 +1,8 @@
-﻿# 🏗️ Sotang Architecture - Documentación Académica
+﻿<div align="center">
+  <img src="assets/Sotang_logo.png" alt="Sotang Logo" width="300"/>
+</div>
+
+# 🏗️ Sotang Architecture - Documentación Académica
 
 Repositorio oficial de documentación arquitectónica para el proyecto **Sotang** (Sistema de Finanzas Personales). Este proyecto ha sido estructurado como material de estudio y presentación para la materia de **Arquitectura de Software** (Universidad de Guayaquil).
 

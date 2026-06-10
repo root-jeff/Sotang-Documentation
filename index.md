@@ -1,6 +1,9 @@
 ---
 layout: home
 hero:
+  image:
+    src: /sotang_icon.png
+    alt: Sotang Icon
   name: 'Sotang'
   text: 'Arquitectura de Software'
   tagline: 'Documentación del sistema de finanzas'
