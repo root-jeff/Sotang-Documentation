@@ -2,8 +2,6 @@
 
 **26 tablas · PostgreSQL 16 · UUIDs como PKs · TIMESTAMPTZ en todos los timestamps**
 
-
-
 ## Mapa de dominios
 
 ```mermaid
@@ -48,8 +46,6 @@ graph TB
     C --> MA
     T --> ADJ
 ```
-
-
 
 ## ERD completo
 

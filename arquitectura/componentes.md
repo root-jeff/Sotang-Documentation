@@ -1,7 +1,5 @@
 # Componentes — Backend y Frontend
 
-
-
 ## Módulos del backend (Monolito Modular)
 
 ```mermaid
@@ -38,8 +36,6 @@ graph TB
 ```
 
 Cada módulo tiene: `router.py` · `service.py` · `schemas.py` · `models.py`
-
-
 
 ## Estructura de carpetas del backend
 
@@ -78,8 +74,6 @@ sotang-api/app/
 └── main.py
 ```
 
-
-
 ## Navegación del frontend
 
 ```mermaid
@@ -102,8 +96,6 @@ graph LR
         SET["/ settings"]
     end
 ```
-
-
 
 ## Flujo de autenticación JWT
 
@@ -131,8 +123,6 @@ sequenceDiagram
     BE->>R: DEL refresh:{token}
     BE-->>FE: 204
 ```
-
-
 
 ## Estado global del frontend
 

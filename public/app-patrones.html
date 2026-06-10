@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sotang - Patrones de Arquitectura</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Roboto & Google Sans vibe) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- PrismJS para Python -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        google: {
+                            blue: '#1a73e8',
+                            blueBg: '#e8f0fe',
+                            gray: '#5f6368',
+                            dark: '#202124',
+                            border: '#dadce0',
+                            bg: '#f8f9fa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Prism overrides para que parezca código de Google Devs */
+        pre[class*="language-"] { 
+            margin: 0 !important; 
+            border-radius: 0 0 0.75rem 0.75rem !important; 
+            background: #202124 !important;
+            padding: 1.5rem !important;
+            font-size: 0.875rem !important;
+        }
+        code[class*="language-"], pre[class*="language-"] {
+            font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel" data-type="module">
+        const { useState, useEffect } = React;
+
+        const PATTERNS = [
+            {
+                id: 'factory',
+                name: 'Factory Method',
+                type: 'Creacional',
+                problem: 'Crear distintos tipos de cuentas (banco, tarjeta, cripto) requiere lógica diferente de base de datos (distintas tablas). Si esto se hace en el controlador de la API, se rompe el principio de Responsabilidad Única.',
+                solution: 'Crear una clase "Fábrica" que evalúa el payload JSON y delega la creación en la base de datos a un "Creador" específico para cada tipo de cuenta.',
+                code: `from abc import ABC, abstractmethod
+from sqlalchemy.orm import Session
+
+# 1. Interfaz del Creador
+class AccountCreator(ABC):
+    @abstractmethod
+    def create_account(self, db: Session, data: dict, user_id: str): 
+        pass
+
+# 2. Creadores Concretos
+class BankAccountCreator(AccountCreator):
+    def create_account(self, db, data, user_id):
+        acc = Cuenta(usuario_id=user_id, tipo="banco", saldo_actual=data.get('saldo', 0))
+        db.add(acc)
+        return acc
+
+class CryptoAccountCreator(AccountCreator):
+    def create_account(self, db, data, user_id):
+        acc = Cuenta(usuario_id=user_id, tipo="cripto")
+        db.add(acc)
+        db.flush() # Obtener UUID generado
+        
+        crypto = CriptoConfig(cuenta_id=acc.id, simbolo=data['simbolo'], cantidad=data['cantidad'])
+        db.add(crypto)
+        return acc
+
+# 3. La Fábrica
+class AccountFactory:
+    @staticmethod
+    def get_creator(tipo: str) -> AccountCreator:
+        creators = {
+            "banco": BankAccountCreator(),
+            "cripto": CryptoAccountCreator()
+        }
+        return creators[tipo]
+
+# --- USO EN FASTAPI ---
+# creator = AccountFactory.get_creator(payload.tipo)
+# acc = creator.create_account(db_session, payload, current_user.id)`
+            },
+            {
+                id: 'strategy',
+                name: 'Strategy',
+                type: 'Comportamiento',
+                problem: 'El módulo de Patrimonio necesita sumar los saldos en USD de todas las cuentas. Sin embargo, una cuenta bancaria suma directamente, una tarjeta de crédito es deuda (resta), y cripto requiere multiplicar cantidad por precio de mercado.',
+                solution: 'Definir una familia de algoritmos (estrategias) para el cálculo del balance. El contexto usa la estrategia adecuada según el tipo de cuenta.',
+                code: `from abc import ABC, abstractmethod
+
+# 1. Interfaz de Estrategia
+class BalanceStrategy(ABC):
+    @abstractmethod
+    def calc_usd(self, account) -> float: 
+        pass
+
+# 2. Estrategias Concretas
+class StandardBalanceStrategy(BalanceStrategy):
+    def calc_usd(self, account): 
+        return float(account.saldo_actual) 
+
+class CreditCardStrategy(BalanceStrategy):
+    def calc_usd(self, account): 
+        # La deuda de tarjeta resta al patrimonio neto
+        return float(-account.saldo_actual) 
+
+class CryptoBalanceStrategy(BalanceStrategy):
+    def calc_usd(self, account):
+        # Requiere cálculo usando relaciones de la base de datos
+        return float(account.cripto_config.cantidad * account.cripto_config.precio_actual_usd)
+
+# 3. Contexto
+class BalanceContext:
+    def __init__(self, strategy: BalanceStrategy):
+        self._strategy = strategy
+
+    def get_balance(self, account):
+        return self._strategy.calc_usd(account)
+
+# --- USO ---
+# ctx = BalanceContext(CryptoBalanceStrategy())
+# usd_balance = ctx.get_balance(my_crypto_account)`
+            },
+            {
+                id: 'facade',
+                name: 'Facade',
+                type: 'Estructural',
+                problem: 'El frontend de React necesita una vista resumen con: liquidez total, tarjetas agrupadas por cupo, y portafolio cripto. Orquestar estas consultas múltiples desde el router es sucio y acoplado.',
+                solution: 'Proporcionar una fachada (Facade) que agrupe las llamadas a los repositorios de SQLAlchemy y devuelva un Data Transfer Object (DTO) limpio.',
+                code: `class AccountDashboardFacade:
+    def __init__(self, db_session):
+        self.account_repo = AccountRepository(db_session)
+        self.card_repo = CardRepository(db_session)
+        self.crypto_repo = CryptoRepository(db_session)
+
+    def get_full_summary(self, user_id: str) -> dict:
+        # Orquestación interna compleja oculta al cliente
+        liquidez = self.account_repo.get_liquid_accounts(user_id)
+        tarjetas = self.card_repo.get_cards_with_groups(user_id)
+        cripto = self.crypto_repo.get_portfolio(user_id)
+        
+        # Interfaz simplificada y unificada
+        return {
+            "liquidez": {
+                "total": sum(a.saldo_actual for a in liquidez), 
+                "items": liquidez
+            },
+            "tarjetas": tarjetas,
+            "cripto": cripto
+        }
+
+# --- USO EN FASTAPI ROUTER ---
+# @router.get("/summary")
+# def get_dashboard(db: Session = Depends(get_db)):
+#     facade = AccountDashboardFacade(db)
+#     return facade.get_full_summary(current_user.id)`
+            },
+            {
+                id: 'adapter',
+                name: 'Adapter',
+                type: 'Estructural',
+                problem: 'El background worker de Celery actualiza precios usando la API de CoinGecko. Si mañana cambia a Binance API, el código entero se rompería por las diferentes llaves JSON.',
+                solution: 'Un Adaptador convierte la interfaz y respuesta específica de una API externa a una interfaz genérica que el sistema Sotang espera.',
+                code: `from abc import ABC, abstractmethod
+import httpx
+
+# 1. Interfaz Objetivo (Lo que Sotang necesita)
+class CryptoProvider(ABC):
+    @abstractmethod
+    def get_usd_price(self, symbol: str) -> float: 
+        pass
+
+# 2. Adaptador para CoinGecko
+class CoinGeckoAdapter(CryptoProvider):
+    def __init__(self):
+        self.client = httpx.Client()
+        
+    def get_usd_price(self, symbol: str) -> float:
+        url = f"https://api.coingecko.com/v3/simple/price?ids={symbol.lower()}&vs_currencies=usd"
+        res = self.client.get(url).json()
+        
+        # CoinGecko devuelve {"bitcoin": {"usd": 65000}}
+        # El adaptador lo traduce a un simple float
+        return float(res.get(symbol.lower(), {}).get('usd', 0.0))
+
+# --- USO EN CELERY WORKER ---
+# provider = CoinGeckoAdapter()
+# new_price = provider.get_usd_price("bitcoin")
+# crypto_account.precio_actual_usd = new_price`
+            },
+            {
+                id: 'observer',
+                name: 'Observer',
+                type: 'Comportamiento',
+                problem: 'Al crear una transacción, se debe actualizar el saldo de la cuenta y recalcular el progreso de una meta de ahorro. Importar esos servicios dentro de transacciones genera alto acoplamiento.',
+                solution: 'El módulo de transacciones emite un evento ("Sujeto"). Los módulos de cuentas y metas se suscriben al evento ("Observadores") y reaccionan.',
+                code: `# 1. Gestor de Eventos (Event Bus)
+class EventManager:
+    def __init__(self): 
+        self._listeners = {}
+
+    def subscribe(self, event, listener):
+        self._listeners.setdefault(event, []).append(listener)
+
+    def notify(self, event, data):
+        for listener in self._listeners.get(event, []):
+            listener.update(data)
+
+event_manager = EventManager()
+
+# 2. Observadores (En módulos independientes)
+class AccountUpdater:
+    def update(self, txn_data):
+        print(f"[Accounts] Actualizando saldo de cuenta {txn_data['cuenta_id']}")
+
+class GoalUpdater:
+    def update(self, txn_data):
+        print(f"[Goals] Recalculando meta asociada a cuenta {txn_data['cuenta_id']}")
+
+# 3. Configuración y Emisión
+# Al arrancar la app:
+event_manager.subscribe("NEW_TXN", AccountUpdater())
+event_manager.subscribe("NEW_TXN", GoalUpdater())
+
+# En transactions/service.py:
+def create_transaction(db, txn_data):
+    # db.add(Transaccion(...))
+    event_manager.notify("NEW_TXN", txn_data)`
+            }
+        ];
+
+        const Icons = {
+            Menu: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>,
+            Code: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>,
+            Problem: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>,
+            Solution: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        };
+
+        const App = () => {
+            const [activePattern, setActivePattern] = useState(PATTERNS[0]);
+            const [sidebarOpen, setSidebarOpen] = useState(false);
+
+            useEffect(() => {
+                if (window.Prism) window.Prism.highlightAll();
+            }, [activePattern]);
+
+            const NavItem = ({ p }) => {
+                const isActive = activePattern.id === p.id;
+                const baseClass = "w-full text-left px-4 py-3 rounded-r-full transition-colors mb-1 ";
+                const activeClass = isActive ? "bg-google-blueBg text-google-blue font-medium" : "text-google-gray hover:bg-gray-100 font-medium";
+                
+                return (
+                    <button 
+                        onClick={() => { setActivePattern(p); setSidebarOpen(false); }}
+                        className={baseClass + activeClass}
+                    >
+                        {p.name}
+                    </button>
+                );
+            };
+
+            const MobileTab = ({ p }) => {
+                const isActive = activePattern.id === p.id;
+                const baseClass = "whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-colors border ";
+                const activeClass = isActive 
+                    ? "bg-google-blueBg text-google-blue border-transparent" 
+                    : "bg-white text-google-gray border-google-border hover:bg-gray-50";
+                
+                return (
+                    <button 
+                        onClick={() => setActivePattern(p)}
+                        className={baseClass + activeClass}
+                    >
+                        {p.name}
+                    </button>
+                );
+            };
+
+            return (
+                <div className="flex flex-col md:flex-row h-screen w-full bg-google-bg">
+                    
+                    {/* Top Header (Mobile & Tablet) */}
+                    <header className="md:hidden bg-white border-b border-google-border px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-google-blue rounded flex items-center justify-center text-white font-bold">S</div>
+                            <div>
+                                <h1 className="text-google-dark font-medium leading-none">Sotang</h1>
+                                <p className="text-xs text-google-gray mt-0.5">Arquitectura de Software</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Desktop Sidebar */}
+                    <aside className="hidden md:flex flex-col w-72 bg-white border-r border-google-border h-full shrink-0">
+                        <div className="p-6">
+                            <div className="flex items-center gap-3 mb-1">
+                                <div className="w-10 h-10 bg-google-blue rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm">S</div>
+                                <div>
+                                    <h1 className="text-xl font-semibold text-google-dark leading-tight">Sotang</h1>
+                                </div>
+                            </div>
+                            <p className="text-sm text-google-gray ml-13">Arquitectura de Software</p>
+                        </div>
+                        <div className="px-6 pb-2">
+                            <h2 className="text-xs font-semibold text-google-gray uppercase tracking-wider mb-2">Patrones GoF</h2>
+                        </div>
+                        <nav className="flex-1 overflow-y-auto pr-4">
+                            {PATTERNS.map(p => <NavItem key={p.id} p={p} />)}
+                        </nav>
+                        <div className="p-6 border-t border-google-border">
+                            <p className="text-xs text-google-gray font-medium">Univ. de Guayaquil<br/>Jefferson Palma</p>
+                        </div>
+                    </aside>
+
+                    {/* Main Content Area */}
+                    <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+                        
+                        {/* Mobile Scrollable Tabs */}
+                        <div className="md:hidden bg-white border-b border-google-border px-4 py-3 flex gap-2 overflow-x-auto hide-scrollbar sticky top-[61px] z-10 shadow-sm">
+                            {PATTERNS.map(p => <MobileTab key={p.id} p={p} />)}
+                        </div>
+
+                        {/* Content Scroll Area */}
+                        <div className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-12">
+                            <div className="max-w-4xl mx-auto space-y-6">
+                                
+                                {/* Title Header */}
+                                <div className="mb-8">
+                                    <div className="inline-block px-3 py-1 bg-google-blueBg text-google-blue text-xs font-bold rounded-md uppercase tracking-wider mb-3">
+                                        Patrón {activePattern.type}
+                                    </div>
+                                    <h2 className="text-3xl md:text-4xl font-semibold text-google-dark tracking-tight">
+                                        {activePattern.name}
+                                    </h2>
+                                </div>
+
+                                {/* Cards Grid */}
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                    
+                                    {/* Problem Card */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-google-border p-6 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-2 bg-red-50 text-red-600 rounded-full">
+                                                <Icons.Problem />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-google-dark">El Problema</h3>
+                                        </div>
+                                        <p className="text-google-gray leading-relaxed text-[15px]">
+                                            {activePattern.problem}
+                                        </p>
+                                    </div>
+
+                                    {/* Solution Card */}
+                                    <div className="bg-white rounded-xl shadow-sm border border-google-border p-6 hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <div className="p-2 bg-green-50 text-green-600 rounded-full">
+                                                <Icons.Solution />
+                                            </div>
+                                            <h3 className="text-lg font-medium text-google-dark">La Solución</h3>
+                                        </div>
+                                        <p className="text-google-gray leading-relaxed text-[15px]">
+                                            {activePattern.solution}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Code Implementation Section */}
+                                <div className="mt-8 bg-white rounded-xl shadow-sm border border-google-border overflow-hidden">
+                                    <div className="bg-white px-5 py-3 border-b border-google-border flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Icons.Code />
+                                            <h3 className="font-medium text-google-dark text-sm">Implementación (FastAPI + Python)</h3>
+                                        </div>
+                                        <span className="text-xs font-mono text-google-gray bg-gray-100 px-2 py-1 rounded">
+                                            {activePattern.id}_example.py
+                                        </span>
+                                    </div>
+                                    <div className="bg-[#202124]">
+                                        <pre className="text-sm font-mono">
+                                            <code className="language-python">{activePattern.code}</code>
+                                        </pre>
+                                    </div>
+                                </div>
+                                
+                                <div className="h-8 md:hidden"></div> {/* Bottom spacer for mobile */}
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

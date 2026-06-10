@@ -2,9 +2,8 @@
 
 Sotang corre en una Raspberry Pi 5 como servidor personal. El acceso es exclusivamente vía Tailscale VPN. Todos los datos son locales.
 
-
-
 ## Diagrama de Nivel Superior (IcePanel)
+
 <iframe src='https://s.icepanel.io/HJNfFYeBu6z5ry/zY0u' height='800' width='100%' title='Sotang Landscape' style='border-radius: 16px; border: none; margin-bottom: 2rem;'></iframe>\n\n## Diagrama de contexto del sistema (C4 - Mermaid)
 
 ```mermaid
@@ -36,35 +35,29 @@ C4Context
     Rel(github, raspi, "Deploy via self-hosted runner")
 ```
 
-
-
 ## Decisiones arquitectónicas
 
-| Decisión | Elección | Razón |
-|----------|----------|-------|
-| Patrón backend | Monolito Modular | Velocidad de desarrollo, límites claros por módulo |
-| Orquestación | K3s | Aprender K8s real, self-healing, rolling updates, ~512MB RAM |
-| Background jobs | Celery + Redis | Reintentos automáticos, scheduling preciso |
-| Deploy | GitHub Actions + self-hosted runner | Push → deploy automático sin exponer puertos |
-| Acceso externo | Tailscale VPN | Sin puertos abiertos, seguro, desde cualquier dispositivo |
-| Ingress | Traefik (built-in K3s) | HTTPS automático, routing por path/host |
-| DB | PostgreSQL puro | Privacidad total, datos en Raspi |
-
-
+| Decisión        | Elección                            | Razón                                                        |
+| --------------- | ----------------------------------- | ------------------------------------------------------------ |
+| Patrón backend  | Monolito Modular                    | Velocidad de desarrollo, límites claros por módulo           |
+| Orquestación    | K3s                                 | Aprender K8s real, self-healing, rolling updates, ~512MB RAM |
+| Background jobs | Celery + Redis                      | Reintentos automáticos, scheduling preciso                   |
+| Deploy          | GitHub Actions + self-hosted runner | Push → deploy automático sin exponer puertos                 |
+| Acceso externo  | Tailscale VPN                       | Sin puertos abiertos, seguro, desde cualquier dispositivo    |
+| Ingress         | Traefik (built-in K3s)              | HTTPS automático, routing por path/host                      |
+| DB              | PostgreSQL puro                     | Privacidad total, datos en Raspi                             |
 
 ## Stack tecnológico
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | React 18 + Vite + Tailwind + Zustand + TanStack Query + Recharts |
-| Backend | FastAPI + Pydantic v2 + SQLAlchemy 2 + Alembic + Celery 5 |
-| Datos | PostgreSQL 16 + Redis 7 + Filesystem local |
-| Auth | python-jose (JWT) + bcrypt |
-| Infra | K3s + Traefik v3 + Docker + GitHub Container Registry |
+| Capa     | Tecnología                                                                       |
+| -------- | -------------------------------------------------------------------------------- |
+| Frontend | React 18 + Vite + Tailwind + Zustand + TanStack Query + Recharts                 |
+| Backend  | FastAPI + Pydantic v2 + SQLAlchemy 2 + Alembic + Celery 5                        |
+| Datos    | PostgreSQL 16 + Redis 7 + Filesystem local                                       |
+| Auth     | python-jose (JWT) + bcrypt                                                       |
+| Infra    | K3s + Traefik v3 + Docker + GitHub Container Registry                            |
 | Externas | Resend + firebase-admin + python-telegram-bot + httpx + google-api-python-client |
-| Exports | WeasyPrint (PDF) + openpyxl (Excel) |
-
-
+| Exports  | WeasyPrint (PDF) + openpyxl (Excel)                                              |
 
 ## RAM estimada en Raspi (8GB)
 
@@ -83,8 +76,6 @@ pie title Uso estimado de RAM (MB)
 ```
 
 **Total estimado: ~2.2 GB / 8 GB — 5.8 GB de margen libre.**
-
-
 
 ## Principios
 
