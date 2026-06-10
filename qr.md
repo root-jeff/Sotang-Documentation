@@ -1,5 +1,8 @@
 ---
 layout: page
+navbar: false
+sidebar: false
+aside: false
 ---
 
 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 75vh; gap: 2rem; text-align: center; padding: 2rem;">
