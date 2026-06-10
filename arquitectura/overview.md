@@ -4,35 +4,44 @@ Sotang corre en una Raspberry Pi 5 como servidor personal. El acceso es exclusiv
 
 ## Diagrama de Nivel Superior (IcePanel)
 
-<iframe src='https://s.icepanel.io/HJNfFYeBu6z5ry/zY0u' height='800' width='100%' title='Sotang Landscape' style='border-radius: 16px; border: none; margin-bottom: 2rem;'></iframe>\n\n## Diagrama de contexto del sistema (C4 - Mermaid)
+<iframe src='https://s.icepanel.io/HJNfFYeBu6z5ry/zY0u' height='800' width='100%' title='Sotang Landscape' style='border-radius: 16px; border: none; margin-bottom: 2rem;'></iframe>
+
+## Diagrama de contexto del sistema (C4 - Mermaid)
 
 ```mermaid
-C4Context
-    title Sistema Sotang — Contexto
+graph TD
+    %% Definición de Estilos C4
+    classDef person fill:#08427b,stroke:#052e51,color:#ffffff,stroke-width:2px
+    classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    classDef external fill:#999999,stroke:#666666,color:#ffffff,stroke-width:2px
+    classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
 
-    Person(jeff, "Jefferson", "Usuario principal via web/mobile/telegram")
+    %% Elementos con etiquetas entre comillas para evitar errores de parseo
+    jeff(("<b>Jefferson</b><br/>(Persona)<br/>Usuario principal")):::person
 
-    System_Boundary(raspi, "Raspberry Pi 5 — Servidor Local") {
-        System(sotang, "Sotang App", "App de finanzas personales")
-    }
+    subgraph RASPI [<b>Raspberry Pi 5</b><br/>Servidor Local]
+        sotang["<b>Sotang App</b><br/>(Sistema de Software)<br/>Gestión de finanzas"]:::system
+    end
+    class RASPI boundary
 
-    System_Ext(tailscale, "Tailscale VPN", "Túnel seguro de acceso remoto")
-    System_Ext(telegram, "Telegram", "Bot para transacciones rápidas y alertas")
-    System_Ext(gmail, "Google Drive", "Backup automático de DB y datos")
-    System_Ext(resend, "Resend", "Emails transaccionales")
-    System_Ext(firebase, "Firebase FCM", "Push notifications")
-    System_Ext(coingecko, "CoinGecko API", "Precios de criptomonedas")
-    System_Ext(github, "GitHub", "Código fuente + CI/CD runner")
+    tailscale["<b>Tailscale VPN</b><br/>(Externo)<br/>Acceso seguro"]:::external
+    telegram["<b>Telegram Bot</b><br/>(Externo)<br/>Interfaz rápida"]:::external
+    gmail["<b>Google Drive</b><br/>(Externo)<br/>Backups"]:::external
+    resend["<b>Resend</b><br/>(Externo)<br/>Emails"]:::external
+    firebase["<b>Firebase</b><br/>(Externo)<br/>Push Notif"]:::external
+    coingecko["<b>CoinGecko</b><br/>(Externo)<br/>Precios Cripto"]:::external
+    github["<b>GitHub</b><br/>(Externo)<br/>CI/CD"]:::external
 
-    Rel(jeff, tailscale, "Accede via")
-    Rel(tailscale, sotang, "Enruta a")
-    Rel(jeff, telegram, "Envía comandos")
-    Rel(telegram, sotang, "Webhook")
-    Rel(sotang, gmail, "Backup diario/semanal")
-    Rel(sotang, resend, "Envía emails")
-    Rel(sotang, firebase, "Push notifications")
-    Rel(sotang, coingecko, "Consulta precios")
-    Rel(github, raspi, "Deploy via self-hosted runner")
+    %% Relaciones
+    jeff --- tailscale
+    tailscale --- sotang
+    jeff --- telegram
+    telegram --- sotang
+    sotang --- gmail
+    sotang --- resend
+    sotang --- firebase
+    sotang --- coingecko
+    github --- RASPI
 ```
 
 ## Decisiones arquitectónicas

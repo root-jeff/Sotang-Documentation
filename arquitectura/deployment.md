@@ -3,111 +3,43 @@
 ## C4 Deployment — Capas de infraestructura
 
 ```mermaid
-C4Deployment
-    title Sotang — Deployment Diagram
+graph TD
+    classDef node fill:#ffffff,stroke:#444444,color:#000000,stroke-width:2px
+    classDef container fill:#438dd5,stroke:#316497,color:#ffffff,stroke-width:2px
+    classDef db fill:#438dd5,stroke:#316497,color:#ffffff,stroke-width:2px
+    classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
 
-    Deployment_Node(dev, "Desarrollador", "Windows 11") {
-        Container(vscode, "VSCode + Git", "IDE", "Escribe código y hace push")
-    }
+    subgraph DEV_NODE ["<b>Estación de Desarrollo</b>"]
+        vscode["<b>VSCode + Git</b><br/>(Herramienta)<br/>IDE Principal"]:::container
+    end
+    class DEV_NODE boundary
 
-    Deployment_Node(cloud, "GitHub Cloud", "github.com") {
-        Deployment_Node(ghrepos, "Repositorios", "Polyrepo") {
-            Container(repo_api, "sotang-api", "Git repo", "FastAPI + Celery + Helm chart")
-            Container(repo_web, "sotang-web", "Git repo", "React + Nginx + Helm chart")
-            Container(repo_bot, "sotang-bot", "Git repo", "Telegram Bot + Helm chart")
-        }
-        Deployment_Node(ghcr, "GitHub Container Registry", "ghcr.io/jeff") {
-            Container(img_api, "sotang-api:latest", "Docker image", "arm64")
-            Container(img_web, "sotang-web:latest", "Docker image", "arm64")
-            Container(img_bot, "sotang-bot:latest", "Docker image", "arm64")
-        }
-    }
+    subgraph CLOUD ["<b>GitHub Cloud</b>"]
+        repo["<b>Repositorios</b><br/>GitHub"]:::container
+        ghcr["<b>Registry</b><br/>ghcr.io"]:::container
+    end
+    class CLOUD boundary
 
-    Deployment_Node(raspi, "Raspberry Pi 5", "Ubuntu Server 24.04 LTS — arm64 — 8GB RAM") {
+    subgraph RASPI_NODE ["<b>Raspberry Pi 5</b>"]
+        subgraph K3S ["<b>Cluster K3s</b>"]
+            traefik["<b>Traefik v3</b><br/>(Ingress)"]:::container
+            pod_fe["<b>Frontend</b><br/>(React)"]:::container
+            pod_be["<b>Backend</b><br/>(FastAPI)"]:::container
+            pod_db[("<b>Postgres</b><br/>(DB)")]:::db
+        end
+        runner["<b>GitHub Runner</b><br/>Self-hosted"]:::container
+    end
+    class RASPI_NODE boundary
+    class K3S boundary
 
-        Deployment_Node(system_services, "Servicios del sistema", "systemd") {
-            Container(tailscale_svc, "Tailscale Agent", "WireGuard", "IP: 100.73.218.19 — túnel VPN")
-            Container(gh_runner, "GitHub Actions Runner", "self-hosted arm64", "Ejecuta pipelines CI/CD")
-        }
-
-        Deployment_Node(k3s_node, "K3s Node", "Kubernetes v1.34 — single node") {
-
-            Deployment_Node(ns_system, "kube-system", "namespace — K3s built-ins") {
-                Container(traefik, "Traefik v3", "Pod — Deployment", "Ingress controller · :80 :443 · TLS termination")
-                Container(coredns, "CoreDNS", "Pod — Deployment", "DNS interno del cluster")
-                Container(servicelb, "ServiceLB", "DaemonSet", "Load balancer integrado")
-            }
-
-            Deployment_Node(ns_sotang, "sotang", "namespace — aplicación") {
-
-                Deployment_Node(deploy_group, "Deployments — stateless", "") {
-                    Container(pod_fe, "frontend", "Pod · Image: sotang-web", "Nginx sirviendo React SPA · :80")
-                    Container(pod_be, "backend", "Pod · Image: sotang-api", "FastAPI · Uvicorn · :8000")
-                    Container(pod_worker, "celery-worker", "Pod · Image: sotang-api", "Celery · consume tasks de Redis")
-                    Container(pod_beat, "celery-beat", "Pod · Image: sotang-api", "Celery Beat · scheduler de tareas")
-                    Container(pod_bot, "telegram-bot", "Pod · Image: sotang-bot", "python-telegram-bot · :8080")
-                }
-
-                Deployment_Node(stateful_group, "StatefulSets — stateful", "") {
-                    ContainerDb(pod_pg, "postgres", "Pod · Image: postgres:16", "PostgreSQL · :5432 · 26 tablas")
-                    ContainerDb(pod_redis, "redis", "Pod · Image: redis:7-alpine", "Redis · :6379 · broker + cache")
-                }
-
-                Deployment_Node(cron_group, "CronJobs — batch", "") {
-                    Container(job_backup, "backup-db", "Job · Image: sotang-api", "pg_dump → Drive · schedule: 0 3 * * *")
-                    Container(job_export, "data-export", "Job · Image: sotang-api", "CSV/JSON export → Drive · schedule: 0 4 * * 0")
-                }
-
-                Deployment_Node(config_group, "Config & Secrets", "") {
-                    Container(configmap, "sotang-config", "ConfigMap", "APP_ENV · DOMAIN · CELERY_BROKER_URL")
-                    Container(secrets, "sotang-secrets", "Secret", "DB_PASSWORD · JWT_SECRET · RESEND_KEY · TELEGRAM_TOKEN · FIREBASE_KEY · GDRIVE_SA_JSON")
-                    Container(ghcr_secret, "ghcr-secret", "Secret (docker-registry)", "Credenciales para pull de imágenes")
-                }
-
-                Deployment_Node(pvc_group, "PersistentVolumeClaims", "") {
-                    ContainerDb(pvc_pg, "postgres-pvc", "PVC · 5Gi · hostPath", "/data/sotang/postgres/")
-                    ContainerDb(pvc_storage, "storage-pvc", "PVC · 20Gi · hostPath", "/data/sotang/storage/")
-                    ContainerDb(pvc_backup, "backup-pvc", "PVC · 10Gi · hostPath", "/data/sotang/backups/")
-                }
-            }
-        }
-
-        Deployment_Node(filesystem, "Filesystem local", "/data/sotang/ — NVMe SSD") {
-            ContainerDb(fs_pg, "postgres/", "Datos PostgreSQL", "WAL · tablas · índices")
-            ContainerDb(fs_storage, "storage/", "Adjuntos de usuarios", "{user_id}/adjuntos/{año}/{mes}/")
-            ContainerDb(fs_backups, "backups/", "Backups locales", "db/ · exports/")
-        }
-    }
-
-    Rel(vscode, repo_api, "git push main")
-    Rel(vscode, repo_web, "git push main")
-    Rel(vscode, repo_bot, "git push main")
-    Rel(repo_api, gh_runner, "trigger workflow")
-    Rel(repo_web, gh_runner, "trigger workflow")
-    Rel(repo_bot, gh_runner, "trigger workflow")
-    Rel(gh_runner, img_api, "docker build + push")
-    Rel(gh_runner, img_web, "docker build + push")
-    Rel(gh_runner, img_bot, "docker build + push")
-    Rel(gh_runner, k3s_node, "helm upgrade --install --atomic")
-    Rel(img_api, pod_be, "imagePull")
-    Rel(img_web, pod_fe, "imagePull")
-    Rel(img_bot, pod_bot, "imagePull")
-    Rel(tailscale_svc, traefik, "enruta tráfico entrante")
-    Rel(traefik, pod_fe, "/ → frontend:80")
-    Rel(traefik, pod_be, "/api → backend:8000")
-    Rel(traefik, pod_bot, "/webhook → telegram-bot:8080")
-    Rel(pod_be, pod_pg, "postgresql://postgres-svc:5432")
-    Rel(pod_be, pod_redis, "redis://redis-svc:6379")
-    Rel(pod_worker, pod_redis, "consume tasks")
-    Rel(pod_worker, pod_pg, "read/write")
-    Rel(pod_beat, pod_redis, "publish tasks")
-    Rel(pod_bot, pod_be, "HTTP + X-Internal-Key")
-    Rel(pod_pg, pvc_pg, "monta volumen")
-    Rel(pod_be, pvc_storage, "guarda adjuntos")
-    Rel(job_backup, pvc_backup, "escribe dumps")
-    Rel(pvc_pg, fs_pg, "hostPath bind")
-    Rel(pvc_storage, fs_storage, "hostPath bind")
-    Rel(pvc_backup, fs_backups, "hostPath bind")
+    vscode --> repo
+    repo --> runner
+    runner --> ghcr
+    runner --> K3S
+    ghcr --> K3S
+    traefik --> pod_fe
+    traefik --> pod_be
+    pod_be --> pod_db
 ```
 
 ## Diagrama de despliegue estructural

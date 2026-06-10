@@ -82,17 +82,3 @@ graph TB
     USER & JEFF_DEVICE -->|"Tailscale"| TRAEFIK_C
     TG_SRV -->|"webhook HTTPS"| TRAEFIK_C
 ```
-
-## Checklist de seguridad
-
-- [x] JWT_SECRET generado con `openssl rand -hex 64`
-- [x] Passwords con bcrypt cost=12
-- [x] Secretos en K3s Secrets, no en repo
-- [x] `.env` y `.env.*` en `.gitignore`
-- [x] HTTPS obligatorio (Traefik + TLS)
-- [x] Rate limiting en `/auth/login`
-- [x] Sin puertos expuestos (solo Tailscale)
-- [x] Todo endpoint verifica `usuario_id == recurso.usuario_id`
-- [x] Logs sin passwords ni tokens
-- [x] PostgreSQL sin acceso externo al cluster
-- [x] Redis sin acceso externo al cluster
