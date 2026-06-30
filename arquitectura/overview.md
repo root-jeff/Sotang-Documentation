@@ -1,74 +1,108 @@
 # Arquitectura — Visión General
 
-Sotang corre en una Raspberry Pi 5 como servidor personal. El acceso es exclusivamente vía Tailscale VPN. Todos los datos son locales.
+<p class="section-intro">Sotang corre en una Raspberry Pi 5 como servidor personal. El acceso externo es vía <strong>Cloudflare Tunnels</strong> — sin puertos abiertos, sin IP pública. Todos los datos permanecen en la Raspi.</p>
 
-## Diagrama de Nivel Superior (IcePanel)
-
-<iframe src='https://s.icepanel.io/HJNfFYeBu6z5ry/zY0u' height='800' width='100%' title='Sotang Landscape' style='border-radius: 16px; border: none; margin-bottom: 2rem;'></iframe>
-
-## Diagrama de contexto del sistema (C4 - Mermaid)
+## Diagrama de contexto del sistema (C4)
 
 ```mermaid
 graph TD
-    %% Definición de Estilos C4
     classDef person fill:#08427b,stroke:#052e51,color:#ffffff,stroke-width:2px
     classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
     classDef external fill:#999999,stroke:#666666,color:#ffffff,stroke-width:2px
     classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
 
-    %% Elementos con etiquetas entre comillas para evitar errores de parseo
     jeff(("<b>Jefferson</b><br/>(Persona)<br/>Usuario principal")):::person
 
-    subgraph RASPI [<b>Raspberry Pi 5</b><br/>Servidor Local]
-        sotang["<b>Sotang App</b><br/>(Sistema de Software)<br/>Gestión de finanzas"]:::system
+    subgraph RASPI ["<b>Raspberry Pi 5</b> — Servidor Local"]
+        sotang["<b>Sotang App</b><br/>(Sistema de Software)<br/>Gestión de finanzas personales"]:::system
     end
     class RASPI boundary
 
-    tailscale["<b>Tailscale VPN</b><br/>(Externo)<br/>Acceso seguro"]:::external
+    cf["<b>Cloudflare Tunnels</b><br/>(Externo)<br/>Acceso HTTPS seguro"]:::external
     telegram["<b>Telegram Bot</b><br/>(Externo)<br/>Interfaz rápida"]:::external
-    gmail["<b>Google Drive</b><br/>(Externo)<br/>Backups"]:::external
-    resend["<b>Resend</b><br/>(Externo)<br/>Emails"]:::external
-    firebase["<b>Firebase</b><br/>(Externo)<br/>Push Notif"]:::external
-    coingecko["<b>CoinGecko</b><br/>(Externo)<br/>Precios Cripto"]:::external
-    github["<b>GitHub</b><br/>(Externo)<br/>CI/CD"]:::external
+    gdrive["<b>Google Drive</b><br/>(Externo)<br/>Backups"]:::external
+    resend["<b>Resend</b><br/>(Externo)<br/>Emails transaccionales"]:::external
+    firebase["<b>Firebase FCM</b><br/>(Externo)<br/>Push notifications"]:::external
+    coingecko["<b>CoinGecko</b><br/>(Externo)<br/>Precios cripto"]:::external
+    github["<b>GitHub</b><br/>(Externo)<br/>CI/CD + Packages"]:::external
 
-    %% Relaciones
-    jeff --- tailscale
-    tailscale --- sotang
-    jeff --- telegram
-    telegram --- sotang
-    sotang --- gmail
-    sotang --- resend
-    sotang --- firebase
-    sotang --- coingecko
-    github --- RASPI
+    jeff -->|"Mobile App / Telegram"| cf
+    cf --> sotang
+    jeff --> telegram
+    telegram --> sotang
+    sotang --> gdrive
+    sotang --> resend
+    sotang --> firebase
+    sotang --> coingecko
+    github -->|"self-hosted runner"| RASPI
+```
+
+## Stack tecnológico
+
+| Capa | Tecnología |
+|------|-----------|
+| **Mobile** | React Native + Expo · NativeWind · Redux Toolkit + RTK Query · Expo Router |
+| **Backend** | Fastify 4 · TypeBox · Drizzle ORM · BullMQ 5 · Node.js 20 LTS |
+| **Datos** | PostgreSQL 16 · Redis 7 · Filesystem NVMe |
+| **Auth** | JWT access (15 min) + refresh (30 días) · bcrypt · SecureStore (mobile) |
+| **Infra** | K3s · Traefik v3 · Helm · GitHub Actions self-hosted runner |
+| **Acceso** | Cloudflare Tunnels (sin puertos expuestos) |
+| **Notif** | Resend · Firebase FCM · gramMY (Telegram) |
+| **Exports** | pdfmake · exceljs · CoinGecko API · Google Drive API |
+
+## Arquitectura macro — K3s namespaces
+
+```mermaid
+graph TB
+    classDef pod fill:#052e16,stroke:#16a34a,color:#bbf7d0
+    classDef db fill:#1c1917,stroke:#d97706,color:#fde68a
+    classDef worker fill:#1e1b4b,stroke:#7c3aed,color:#ddd6fe
+    classDef infra fill:#0f172a,stroke:#6366f1,color:#c7d2fe
+    classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
+
+    subgraph RASPI["Raspberry Pi 5 — Ubuntu 24.04 arm64"]
+
+        subgraph K3S["K3s — Single Node"]
+
+            subgraph SYS["kube-system"]
+                TRAEFIK["Traefik v3\nIngressRoute CRD"]:::infra
+                COREDNS["CoreDNS"]:::infra
+            end
+
+            subgraph SOTANG["namespace: sotang"]
+                FE["Pod: frontend\nsotang-web (Fase 2)\nNginx SPA"]:::pod
+                BE["Pod: backend\nsotang-api\nFastify · :3000"]:::pod
+                WK["Pod: bullmq-worker\nnotif · cripto · backup"]:::worker
+                BOT["Pod: telegram-bot\ngramMY · :3001"]:::pod
+                PG[("Pod: postgres-0\nPostgreSQL 16")]:::db
+                REDIS[("Pod: redis-0\nRedis 7")]:::db
+            end
+        end
+
+        CF_DAEMON["cloudflared\nsystemd service"]:::infra
+        RUNNER["GitHub Runner\nsystemd service"]:::infra
+    end
+
+    CF_DAEMON -->|"tunnel HTTPS"| TRAEFIK
+    TRAEFIK --> BE & FE & BOT
+    BE --> PG & REDIS
+    WK --> REDIS & PG
+    BOT --> BE
 ```
 
 ## Decisiones arquitectónicas
 
-| Decisión        | Elección                            | Razón                                                        |
-| --------------- | ----------------------------------- | ------------------------------------------------------------ |
-| Patrón backend  | Monolito Modular                    | Velocidad de desarrollo, límites claros por módulo           |
-| Orquestación    | K3s                                 | Aprender K8s real, self-healing, rolling updates, ~512MB RAM |
-| Background jobs | Celery + Redis                      | Reintentos automáticos, scheduling preciso                   |
-| Deploy          | GitHub Actions + self-hosted runner | Push → deploy automático sin exponer puertos                 |
-| Acceso externo  | Tailscale VPN                       | Sin puertos abiertos, seguro, desde cualquier dispositivo    |
-| Ingress         | Traefik (built-in K3s)              | HTTPS automático, routing por path/host                      |
-| DB              | PostgreSQL puro                     | Privacidad total, datos en Raspi                             |
+| Decisión | Elección | Razón |
+|----------|----------|-------|
+| Patrón backend | Monolito Modular | Velocidad de desarrollo, límites claros entre módulos, un solo proceso Node.js |
+| Repos | Polyrepo (6 repos) | CI/CD independiente, versionado autónomo, sin problemas Metro/symlinks |
+| Background jobs | BullMQ + Redis | Colas persistentes, reintentos automáticos, UI Bull Board |
+| Acceso externo | Cloudflare Tunnels | Sin puertos expuestos, HTTPS automático, funciona sin IP pública |
+| Ingress | Traefik v3 (K3s built-in) | Routing por host/path, TLS, IngressRoute CRD |
+| ORM | Drizzle ORM | Type-safe, sin runtime overhead, queries SQL explícitas |
+| Orquestación | K3s | Self-healing, rolling updates, ~512 MB RAM — ideal Raspi |
 
-## Stack tecnológico
-
-| Capa     | Tecnología                                                                       |
-| -------- | -------------------------------------------------------------------------------- |
-| Frontend | React 18 + Vite + Tailwind + Zustand + TanStack Query + Recharts                 |
-| Backend  | FastAPI + Pydantic v2 + SQLAlchemy 2 + Alembic + Celery 5                        |
-| Datos    | PostgreSQL 16 + Redis 7 + Filesystem local                                       |
-| Auth     | python-jose (JWT) + bcrypt                                                       |
-| Infra    | K3s + Traefik v3 + Docker + GitHub Container Registry                            |
-| Externas | Resend + firebase-admin + python-telegram-bot + httpx + google-api-python-client |
-| Exports  | WeasyPrint (PDF) + openpyxl (Excel)                                              |
-
-## RAM estimada en Raspi (8GB)
+## RAM estimada en Raspi (8 GB)
 
 ```mermaid
 pie title Uso estimado de RAM (MB)
@@ -76,21 +110,20 @@ pie title Uso estimado de RAM (MB)
     "OS Ubuntu" : 512
     "PostgreSQL" : 256
     "Redis" : 64
-    "Traefik" : 128
-    "Backend FastAPI" : 256
-    "Celery Worker" : 256
-    "Celery Beat" : 64
-    "Frontend Nginx" : 32
+    "Traefik" : 64
+    "Backend Fastify" : 192
+    "BullMQ Worker" : 192
     "Telegram Bot" : 128
+    "Frontend Nginx" : 32
 ```
 
-**Total estimado: ~2.2 GB / 8 GB — 5.8 GB de margen libre.**
+**Total estimado: ~1.95 GB / 8 GB — más de 6 GB de margen libre.**
 
-## Principios
+## Principios de diseño
 
-1. **Privacy by default** — datos en Raspi, sin cloud para datos propios
+1. **Privacy by default** — datos en Raspi, sin nube para datos propios
 2. **Self-healing** — K3s reinicia pods caídos automáticamente
-3. **Zero-downtime deploy** — rolling updates vía K3s Deployments
-4. **Modular pero cohesivo** — módulos internos en FastAPI con interfaces claras
-5. **Observable** — logs estructurados, health checks en todos los pods
-6. **Backup-first** — dos capas de backup antes de cualquier feature
+3. **Zero-downtime deploy** — rolling updates vía Helm `--atomic`
+4. **Modular pero cohesivo** — 12 módulos de negocio con interfaces explícitas
+5. **Observable** — logs estructurados Pino, health checks en todos los pods
+6. **Backup-first** — dos capas (local NVMe + Google Drive) antes de cualquier feature

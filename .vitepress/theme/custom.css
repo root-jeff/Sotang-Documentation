@@ -1,1 +1,144 @@
-.zoomable-mermaid { cursor: zoom-in; width: 100%; border-radius: 8px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transition: transform 0.2s; } .zoomable-mermaid:hover { transform: scale(1.01); } .medium-zoom-overlay { z-index: 200; } .medium-zoom-image--opened { z-index: 201; }
+/* ─── PlantUML: dark mode filter ─────────────────────────────────────────── */
+.vp-doc img[src*="plantuml"] {
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+  max-width: 100%;
+  transition: filter 0.25s ease, transform 0.2s ease;
+  cursor: zoom-in;
+  display: block;
+  margin: 1.5rem auto;
+}
+.vp-doc img[src*="plantuml"]:hover {
+  transform: scale(1.01);
+}
+.dark .vp-doc img[src*="plantuml"] {
+  filter: invert(92%) hue-rotate(180deg);
+  box-shadow: 0 2px 12px rgba(0,0,0,.45);
+}
+
+/* ─── Mermaid zoom ────────────────────────────────────────────────────────── */
+.zoomable-mermaid {
+  cursor: zoom-in;
+  width: 100%;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.10);
+  transition: transform 0.2s;
+  display: block;
+  margin: 1.5rem auto;
+}
+.zoomable-mermaid:hover { transform: scale(1.01); }
+.medium-zoom-overlay { z-index: 200; }
+.medium-zoom-image--opened { z-index: 201; }
+
+/* ─── Tipografía y prosa ──────────────────────────────────────────────────── */
+.vp-doc h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  border-bottom: 2px solid var(--vp-c-brand-1);
+  padding-bottom: .5rem;
+  margin-bottom: 1.5rem;
+}
+.vp-doc h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin-top: 2.5rem;
+  margin-bottom: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.vp-doc h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--vp-c-brand-1);
+  margin-top: 1.75rem;
+}
+.vp-doc p { line-height: 1.75; }
+.vp-doc a { font-weight: 500; }
+
+/* ─── Tablas mejoradas ────────────────────────────────────────────────────── */
+.vp-doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: .9rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.vp-doc thead tr {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: .78rem;
+  letter-spacing: .06em;
+}
+.vp-doc th, .vp-doc td {
+  padding: .65rem 1rem;
+  border: 1px solid var(--vp-c-divider);
+}
+.vp-doc tbody tr:hover {
+  background: var(--vp-c-bg-soft);
+  transition: background 0.15s;
+}
+
+/* ─── Bloques de código mejorados ────────────────────────────────────────── */
+.vp-doc div[class*='language-'] {
+  border-radius: 10px;
+  margin: 1.25rem 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10);
+}
+
+/* ─── Badges de tech stack ───────────────────────────────────────────────── */
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  border: 1px solid var(--vp-c-brand-soft);
+  border-radius: 9999px;
+  padding: .2rem .75rem;
+  font-size: .78rem;
+  font-weight: 600;
+  margin: .2rem;
+  white-space: nowrap;
+}
+
+/* ─── Status pills ────────────────────────────────────────────────────────── */
+.status-done    { color: #22c55e; font-weight: 600; }
+.status-wip     { color: #f59e0b; font-weight: 600; }
+.status-pending { color: #94a3b8; font-weight: 600; }
+
+/* ─── Section intro ──────────────────────────────────────────────────────── */
+.section-intro {
+  font-size: 1.05rem;
+  color: var(--vp-c-text-2);
+  border-left: 3px solid var(--vp-c-brand-1);
+  padding-left: 1rem;
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+/* ─── Custom containers override ─────────────────────────────────────────── */
+.vp-doc .custom-block {
+  border-radius: 8px;
+  margin: 1.25rem 0;
+}
+
+/* ─── Sidebar: sección activa highlight ──────────────────────────────────── */
+.VPSidebarItem.is-active > .item > .link {
+  color: var(--vp-c-brand-1) !important;
+  font-weight: 600;
+}
+
+/* ─── Home page: feature cards ───────────────────────────────────────────── */
+.VPFeature {
+  border-radius: 12px !important;
+  transition: transform 0.2s, box-shadow 0.2s !important;
+}
+.VPFeature:hover {
+  transform: translateY(-3px) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12) !important;
+}

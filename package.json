@@ -20,6 +20,7 @@
     "vue": "^3.5.35"
   },
   "dependencies": {
+    "markdown-it-plantuml": "^1.4.1",
     "medium-zoom": "^1.1.0"
   }
 }
