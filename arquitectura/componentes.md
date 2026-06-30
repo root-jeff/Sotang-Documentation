@@ -1,51 +1,53 @@
-# Componentes — Backend y Frontend
+# Componentes — Backend y Clientes
 
-## Módulos del backend (Monolito Modular)
+<p class="section-intro">El backend es un <strong>Monolito Modular</strong> Fastify con 12 módulos de negocio independientes. Tres clientes consumen el mismo REST API: la app mobile React Native, el bot Telegram, y la SPA web (Fase 2).</p>
+
+## Módulos del backend
 
 ```mermaid
 graph TB
-    subgraph API["FastAPI — sotang-api"]
+    subgraph API["sotang-api — Fastify · Node.js 20"]
         subgraph CORE["core/"]
-            CONFIG["config.py — Settings / .env"]
-            DB["database.py — Session factory"]
-            SECURITY["security.py — JWT · bcrypt"]
-            DEPS["dependencies.py — get_current_user · get_db"]
-            MIDDLEWARE["middleware.py — CORS · logging · timing"]
+            CONFIG["config.ts — env vars + TypeBox schema"]
+            DB["db.ts — DrizzleDB singleton (pool pg)"]
+            AUTH_PLG["auth.plugin.ts — JWT verify decorator"]
+            MIDDLEWARE["middleware.ts — CORS · Pino logger · timing"]
         end
-        subgraph MODULES["modules/"]
-            AUTH["auth/ — login · register · refresh · reset"]
+        subgraph MODULES["modules/ — 12 módulos de negocio"]
+            AUTH["auth/ — login · register · refresh · logout"]
             ACCOUNTS["accounts/ — cuentas · tarjetas · cupos · cripto"]
             TXN["transactions/ — CRUD · recurrentes · categorías · IVA"]
-            BUDGETS["budgets/ — presupuestos · alertas"]
+            BUDGETS["budgets/ — presupuestos · alertas 80 pct"]
             GOALS["goals/ — metas · aportes · progreso"]
             PATRIMONY["patrimony/ — activos · pasivos · equifax · amortización"]
             RECEIVABLES["receivables/ — cuentas x cobrar · deudas"]
-            REPORTS["reports/ — PDF · Excel"]
-            STORAGE["storage/ — upload · download · adjuntos"]
-            NOTIFICATIONS["notifications/ — config · historial · templates"]
+            REPORTS["reports/ — PDF pdfmake · Excel exceljs"]
+            STORAGE["storage/ — upload · adjuntos"]
+            NOTIFICATIONS["notifications/ — preferencias · historial"]
             BACKUP["backup/ — trigger · historial"]
+            USERS["users/ — perfil · settings · FCM token"]
         end
-        subgraph WORKERS["workers/ (Celery)"]
-            W1["recurring_transactions.py"]
-            W2["notifications.py — email · push · telegram"]
-            W3["crypto_prices.py — cada 30min"]
-            W4["backup.py — pg_dump · gdrive"]
-            W5["budget_alerts.py"]
+        subgraph WORKERS["workers/ (BullMQ)"]
+            W1["recurring-txn.worker.ts — crea txns en fecha"]
+            W2["notifications.worker.ts — email · push · telegram"]
+            W3["crypto-prices.worker.ts — cada 30 min"]
+            W4["backup.worker.ts — pg_dump · gzip · GDrive"]
+            W5["budget-alerts.worker.ts — supera 80 pct"]
         end
     end
 ```
 
-Cada módulo tiene: `router.py` · `service.py` · `schemas.py` · `models.py`
+Cada módulo contiene: `router.ts` · `service.ts` · `schema.ts` (TypeBox) · `repository.ts` (Drizzle)
 
-## Estructura de carpetas del backend
+## Estructura de carpetas
 
 ```
-sotang-api/app/
+sotang-api/src/
 ├── core/
-│   ├── config.py          pydantic-settings
-│   ├── database.py        SQLAlchemy engine + session
-│   ├── security.py        JWT, bcrypt, tokens
-│   └── dependencies.py    FastAPI Depends()
+│   ├── config.ts          TypeBox env schema + dotenv
+│   ├── db.ts              DrizzleDB pool singleton
+│   ├── auth.plugin.ts     Fastify decorator: verifyJWT
+│   └── middleware.ts      CORS, Pino, timing
 ├── modules/
 │   ├── auth/
 │   ├── accounts/
@@ -57,88 +59,97 @@ sotang-api/app/
 │   ├── reports/
 │   ├── storage/
 │   ├── notifications/
-│   └── backup/
+│   ├── backup/
+│   └── users/
 ├── workers/
-│   ├── celery_app.py
-│   ├── recurring_transactions.py
-│   ├── notifications.py
-│   ├── crypto_prices.py
-│   ├── backup.py
-│   └── budget_alerts.py
+│   ├── queues.ts              BullMQ Queue instances
+│   ├── recurring-txn.worker.ts
+│   ├── notifications.worker.ts
+│   ├── crypto-prices.worker.ts
+│   ├── backup.worker.ts
+│   └── budget-alerts.worker.ts
 ├── integrations/
-│   ├── resend_client.py
-│   ├── firebase_client.py
-│   ├── telegram_client.py
-│   ├── coingecko_client.py
-│   └── gdrive_client.py
-└── main.py
+│   ├── resend.adapter.ts
+│   ├── firebase.adapter.ts
+│   ├── telegram.adapter.ts
+│   ├── coingecko.adapter.ts
+│   └── gdrive.adapter.ts
+└── app.ts
 ```
 
-## Navegación del frontend
+## Navegación mobile (React Native + Expo Router)
 
 ```mermaid
 graph LR
-    subgraph AUTH_PAGES["Auth (sin layout)"]
-        LOGIN["/login"]
-        REGISTER["/register"]
-        RESET["/reset-password"]
+    subgraph AUTH_SCREENS["Auth (sin tab bar)"]
+        LOGIN["(auth)/login"]
+        REGISTER["(auth)/register"]
+        RESET["(auth)/reset-password"]
     end
 
-    subgraph APP["App (con layout Sidebar + Header)"]
-        DASH["/ Dashboard"]
-        TXN["/ transactions"]
-        FIN["/ finance"]
-        ACC["/ accounts"]
-        PAT["/ patrimony"]
-        BUD["/ budgets"]
-        GOA["/ goals"]
-        REC["/ receivables"]
-        SET["/ settings"]
+    subgraph TABS["(tabs)/ — Bottom Tab Navigator"]
+        DASH["index — Dashboard"]
+        TXN["transactions — Movimientos"]
+        ACC["accounts — Cuentas"]
+        BUDGETS_S["budgets — Presupuestos"]
+        MORE["more — Más opciones"]
     end
+
+    subgraph MORE_STACK["Stack bajo 'Más'"]
+        GOALS_S["goals"]
+        PATRIMONY_S["patrimony"]
+        RECEIVABLES_S["receivables"]
+        REPORTS_S["reports"]
+        SETTINGS_S["settings"]
+    end
+
+    LOGIN --> TABS
+    MORE --> MORE_STACK
 ```
 
 ## Flujo de autenticación JWT
 
 ```mermaid
 sequenceDiagram
-    participant FE as Frontend React
-    participant BE as FastAPI
+    participant APP as Mobile App
+    participant BE as Fastify API
     participant DB as PostgreSQL
-    participant R as Redis
+    participant SS as SecureStore (device)
 
-    FE->>BE: POST /api/v1/auth/login {email, password}
-    BE->>DB: SELECT usuario WHERE email=X
-    BE->>BE: bcrypt.verify(password, hash)
-    BE->>BE: generar access_token (15min) + refresh_token (7d)
-    BE->>R: SET refresh:{token} = user_id (TTL 7d)
-    BE-->>FE: {access_token, refresh_token, user}
+    APP->>BE: POST /api/v1/auth/login { email, password }
+    BE->>DB: SELECT user WHERE email = X
+    BE->>BE: bcrypt.compare(password, hash)
+    BE->>BE: sign access_token (15 min) + refresh_token (30 días)
+    BE-->>APP: { accessToken, refreshToken, user }
+    APP->>SS: SecureStore.setItem('tokens', ...)
 
-    Note over FE,BE: Auto-refresh cuando access_token expira
-    FE->>BE: POST /auth/refresh {refresh_token}
-    BE->>R: verificar token existe
-    BE-->>FE: {access_token nuevo}
+    Note over APP,BE: access_token expirado
+    APP->>BE: POST /auth/refresh { refreshToken }
+    BE->>DB: SELECT refresh_tokens WHERE token = hash
+    BE-->>APP: { accessToken nuevo }
 
-    Note over FE,BE: Logout
-    FE->>BE: POST /auth/logout {refresh_token}
-    BE->>R: DEL refresh:{token}
-    BE-->>FE: 204
+    Note over APP,BE: Logout
+    APP->>BE: POST /auth/logout { refreshToken }
+    BE->>DB: DELETE FROM refresh_tokens WHERE token = hash
+    BE-->>APP: 204 No Content
+    APP->>SS: SecureStore.deleteItem('tokens')
 ```
 
-## Estado global del frontend
+## Estado global mobile (Redux Toolkit)
 
 ```mermaid
 graph TB
-    subgraph ZUSTAND["Zustand (estado del cliente)"]
-        AUTH_S["authStore — user · accessToken · isAuthenticated"]
-        UI_S["uiStore — theme · sidebarOpen · activeModal"]
-        SETTINGS_S["settingsStore — currency · timezone · IVA"]
+    subgraph RTK["Redux Toolkit Store"]
+        AUTH_S["authSlice\nuser · accessToken · isAuthenticated"]
+        UI_S["uiSlice\ntheme · activeModal"]
+        SETTINGS_S["settingsSlice\ncurrency · timezone · IVA rate"]
     end
 
-    subgraph REACT_QUERY["TanStack Query (estado del servidor)"]
-        TXN_Q["useTransactions() — cache + refetch"]
-        ACC_Q["useAccounts() — cache + invalidación"]
-        DASH_Q["useDashboard() — polling cada 5min"]
+    subgraph RTK_QUERY["RTK Query — API cache"]
+        TXN_Q["transactionsApi\nuseGetTransactionsQuery · cache 5min"]
+        ACC_Q["accountsApi\nuseGetAccountsQuery · invalidation"]
+        DASH_Q["dashboardApi\nuseGetDashboardQuery · polling 5min"]
     end
 
-    AUTH_S -->|"token en headers"| TXN_Q & ACC_Q & DASH_Q
+    AUTH_S -->|"Bearer token en baseQuery"| TXN_Q & ACC_Q & DASH_Q
 ```
