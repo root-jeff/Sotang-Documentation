@@ -2,7 +2,8 @@ import DefaultTheme from 'vitepress/theme';
 // Import directo al build ESM: bajo SSR, Vite resuelve el campo "main" del
 // paquete (UMD) en vez de "module", lo que rompe el export default.
 import Panzoom from '@panzoom/panzoom/dist/panzoom.es.js';
-import { onMounted, watch, nextTick } from 'vue';
+import Lenis from 'lenis';
+import { onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vitepress';
 import './custom.css';
 
@@ -64,6 +65,9 @@ export default {
 
       const viewport = document.createElement('div');
       viewport.className = 'diagram-panzoom-viewport';
+      // Evita que Lenis intercepte la rueda del mouse aquí: el wheel ya lo
+      // usa Panzoom para hacer zoom sobre el diagrama, no para scrollear la página.
+      viewport.setAttribute('data-lenis-prevent', '');
 
       const toolbar = document.createElement('div');
       toolbar.className = 'diagram-panzoom-toolbar';
@@ -114,5 +118,33 @@ export default {
     });
 
     watch(() => route.path, () => nextTick(() => setTimeout(initZoom, 800)));
+
+    // Scroll suave con inercia (estilo sitios modernos) en vez del salto
+    // "por líneas" del scroll nativo del navegador con la rueda del mouse.
+    let lenis: Lenis | null = null;
+    let rafId = 0;
+
+    onMounted(() => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) return;
+
+      lenis = new Lenis({
+        duration: 1.1,
+        easing: (t: number) => 1 - Math.pow(1 - t, 3),
+        smoothWheel: true,
+      });
+
+      const raf = (time: number) => {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    });
+
+    onUnmounted(() => {
+      cancelAnimationFrame(rafId);
+      lenis?.destroy();
+      lenis = null;
+    });
   },
 };
