@@ -59,3 +59,5 @@ Los archivos generados se encontrarán en el directorio .vitepress/dist.
 
 ---
 *Desarrollado por Jefferson Palma para la Universidad de Guayaquil.*
+
+Redeploy
