@@ -128,34 +128,123 @@ Cada decisión estructural está documentada como Architecture Decision Record: 
   },
 ]" />
 
-## Vista C4 — Contenedores
+## Las vistas C4 — Nivel 1: Contexto
 
 <Reveal>
 
+El sistema como caja negra: quién lo usa, con qué externos habla y — clave para la tesis de privacidad — **qué recibe exactamente cada externo**. La IA local vía MCP aparece punteada como sistema futuro:
+
 ```mermaid
-graph TB
-    subgraph Internet
-        USR[Usuario]
+graph TD
+    classDef person fill:#08427b,stroke:#052e51,color:#ffffff,stroke-width:2px
+    classDef system fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    classDef external fill:#999999,stroke:#666666,color:#ffffff,stroke-width:2px
+    classDef future fill:#4c1d95,stroke:#7c3aed,color:#ddd6fe,stroke-width:2px,stroke-dasharray: 6 4
+    classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
+
+    jeff(("<b>Jefferson</b><br/>[Persona]<br/>Único usuario del sistema:<br/>registra, consulta y planifica<br/>sus finanzas")):::person
+
+    cf["<b>Cloudflare</b><br/>[Sistema Externo]<br/>Túnel de entrada: WAF,<br/>TLS 1.3, sin puertos abiertos"]:::external
+    tg["<b>Telegram</b><br/>[Sistema Externo]<br/>Canal conversacional:<br/>comandos /gasto, /balance<br/>y entrega de alertas"]:::external
+
+    subgraph RASPI ["<b>Raspberry Pi 5</b> — red doméstica del usuario"]
+        sotang["<b>Sotang Finance</b><br/>[Sistema de Software]<br/>Registra transacciones con IVA,<br/>consolida cuentas, cupos, metas,<br/>presupuestos y patrimonio neto"]:::system
     end
-    subgraph Raspi["Raspberry Pi 5 — K3s"]
-        API[API Fastify<br/>12 módulos · 512 MB]
-        WRK[Workers BullMQ<br/>256 MB]
-        BOT[Bot gramMY<br/>128 MB]
-        PG[(PostgreSQL 16<br/>28 tablas · 700 MB)]
-        RD[(Redis 7<br/>cache + colas · 300 MB)]
-        CFD[cloudflared · 64 MB]
+    class RASPI boundary
+
+    subgraph NOTIF ["Salida de notificaciones"]
+        resend["<b>Resend</b><br/>[Sistema Externo]<br/>Email transaccional"]:::external
+        fcm["<b>Firebase FCM</b><br/>[Sistema Externo]<br/>Push a la app móvil"]:::external
     end
-    EXT[CoinGecko · Resend · FCM · Drive]
-    USR -->|HTTPS| CFD --> API
-    API --> PG
-    API --> RD
-    RD --> WRK
-    WRK --> PG
-    WRK --> EXT
-    BOT --> API
+    class NOTIF boundary
+
+    subgraph DATA ["Datos de terceros (solo lo mínimo)"]
+        gecko["<b>CoinGecko</b><br/>[Sistema Externo]<br/>Precios cripto — solo recibe<br/>IDs de monedas"]:::external
+        equifax["<b>Equifax Ecuador</b><br/>[Sistema Externo]<br/>Score crediticio — JSON<br/>subido manualmente"]:::external
+    end
+    class DATA boundary
+
+    subgraph OPS ["Operación"]
+        gdrive["<b>Google Drive</b><br/>[Sistema Externo]<br/>Solo recibe backups cifrados"]:::external
+        github["<b>GitHub</b><br/>[Sistema Externo]<br/>CI/CD, registry y<br/>paquete @sotang/shared"]:::external
+    end
+    class OPS boundary
+
+    ia["<b>IA Local (futuro)</b><br/>[Sistema Planificado]<br/>LLM en la misma red,<br/>conectado vía MCP"]:::future
+
+    jeff -->|"Registra y consulta<br/>[App Expo · HTTPS]"| cf
+    jeff -->|"Envía /gasto 25.50 comida<br/>[chat de Telegram]"| tg
+    cf -->|"Reenvía requests<br/>[túnel saliente]"| sotang
+    tg -->|"Webhook de comandos<br/>[HTTPS vía Cloudflare]"| cf
+    sotang -->|"Responde y alerta<br/>[Bot API]"| tg
+    sotang -->|"Envía emails<br/>[API REST]"| resend
+    sotang -->|"Envía push<br/>[FCM Admin]"| fcm
+    resend -.->|entrega| jeff
+    fcm -.->|entrega| jeff
+    sotang -->|"Consulta precios cada 30 min<br/>[API pública]"| gecko
+    jeff -->|"Sube reporte JSON<br/>[upload manual]"| sotang
+    equifax -.->|"descarga del portal"| jeff
+    sotang -->|"Backup nocturno cifrado<br/>[Drive API v3]"| gdrive
+    github -->|"Deploy por runner<br/>self-hosted [Actions]"| RASPI
+    ia -.->|"Consultas y registro<br/>[MCP · red local]"| sotang
 ```
 
-Ningún cliente toca la base de datos: PostgreSQL solo es accesible pod-a-pod dentro del cluster.
+</Reveal>
+
+## Nivel 2: Aplicación / Contenedores
+
+<Reveal>
+
+Las unidades desplegables, cada una con su tecnología y el protocolo de cada relación. Nótese que el bot **no toca la base de datos** — es un cliente más de la API:
+
+```mermaid
+graph TB
+    classDef person fill:#08427b,stroke:#052e51,color:#ffffff,stroke-width:2px
+    classDef container fill:#1168bd,stroke:#0b4884,color:#ffffff,stroke-width:2px
+    classDef db fill:#1c1917,stroke:#d97706,color:#fde68a,stroke-width:2px
+    classDef external fill:#999999,stroke:#666666,color:#ffffff
+    classDef future fill:#4c1d95,stroke:#7c3aed,color:#ddd6fe,stroke-dasharray: 6 4
+    classDef boundary fill:none,stroke:#444444,stroke-width:2px,stroke-dasharray: 5 5
+
+    jeff(("<b>Jefferson</b><br/>[Persona]")):::person
+
+    subgraph CLIENTES ["Dispositivos del usuario"]
+        mobile["<b>App Móvil</b><br/>[Contenedor: React Native + Expo SDK 57]<br/>5 tabs: dashboard, cuentas, transacciones,<br/>metas, perfil · Redux Toolkit + RTK Query<br/>· tokens en SecureStore"]:::container
+        webspa["<b>Web SPA</b><br/>[Contenedor: React + Nginx — Fase 2]<br/>Misma API, refresh token<br/>en Cookie HttpOnly"]:::future
+    end
+    class CLIENTES boundary
+
+    tgapi["<b>Telegram</b><br/>[Sistema Externo]"]:::external
+    cf["<b>Cloudflare Tunnel</b><br/>[Infraestructura]<br/>WAF · TLS 1.3 · túnel saliente"]:::external
+
+    subgraph SISTEMA ["Sotang Finance — Raspberry Pi 5 / K3s"]
+        bot["<b>Bot Conversacional</b><br/>[Contenedor: Node.js + gramMY]<br/>Parsea /gasto, /balance, /metas...<br/>y reenvía a la API como cliente REST"]:::container
+        api["<b>API Backend</b><br/>[Contenedor: Fastify · Node.js 20 · TS]<br/>12 módulos de negocio · pipeline<br/>rate-limit → JWT → TypeBox → handler<br/>· transacciones ACID · OpenAPI 3.0"]:::container
+        workers["<b>Workers Asíncronos</b><br/>[Contenedor: BullMQ · concurrency 4]<br/>recurrentes · notificaciones · alertas<br/>de presupuesto · precios cripto · backups"]:::container
+        pg[("<b>PostgreSQL 16</b><br/>[Contenedor: StatefulSet]<br/>28 tablas · única fuente<br/>de verdad · WAL")]:::db
+        redis[("<b>Redis 7</b><br/>[Contenedor: StatefulSet]<br/>colas BullMQ (AOF) · cache TTL 5 min<br/>· refresh tokens · rate limiting")]:::db
+        fs[("<b>Storage NVMe</b><br/>[Filesystem]<br/>adjuntos de transacciones<br/>· dumps locales")]:::db
+    end
+    class SISTEMA boundary
+
+    jeff -->|"usa [HTTPS]"| mobile
+    jeff -.->|"usará [HTTPS]"| webspa
+    jeff -->|"chatea"| tgapi
+    mobile -->|"JSON/REST [HTTPS]"| cf
+    webspa -.->|"JSON/REST [HTTPS]"| cf
+    tgapi -->|"webhook [HTTPS]"| cf
+    cf -->|"/api → :3000<br/>/webhook → :3001"| api
+    cf -->|" "| bot
+    bot -->|"REST interno<br/>[http://backend-svc:3000]"| api
+    api -->|"SQL [Drizzle ORM<br/>· pool pg]"| pg
+    api -->|"queue.add() < 1 ms<br/>[ioredis]"| redis
+    api -->|"multipart upload"| fs
+    redis -->|"consume jobs"| workers
+    workers -->|"SQL [Drizzle]"| pg
+    workers -->|"adapters: Resend ·<br/>FCM · Telegram · CoinGecko"| tgapi
+```
+
+Ningún cliente toca la base de datos: PostgreSQL y Redis solo son accesibles pod-a-pod dentro del cluster.
 
 </Reveal>
 
