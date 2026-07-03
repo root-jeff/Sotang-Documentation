@@ -234,7 +234,7 @@ NotificationWorker --> INotificationProvider : usa
 
 ## Patrón 5 — Composite (`modules/accounts/` — cupos compartidos)
 
-**Problema**: Las tarjetas Diners Club y Titanium comparten un cupo único de $900. Un modelo plano de cuentas independientes no puede expresar esta relación.
+**Problema**: Las tarjetas Diners Club y Titanium comparten un cupo único de $2000. Un modelo plano de cuentas independientes no puede expresar esta relación.
 
 **Solución**: `AccountGroup` contiene sub-cuentas y delega `getRemainingCredit()` al grupo, que suma el uso de todas sus hijas.
 
@@ -275,7 +275,7 @@ IAccountComponent <|.. CreditCardAccount
 IAccountComponent <|.. AccountGroup
 AccountGroup o--> IAccountComponent : children
 
-note right of AccountGroup : Diners + Titanium = $900 compartidos\nRemainingCredit = 900 - Σ usado
+note right of AccountGroup : Diners + Titanium = $2000 compartidos\nRemainingCredit = 900 - Σ usado
 @enduml
 ```
 

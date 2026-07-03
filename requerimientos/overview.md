@@ -32,7 +32,7 @@ Sotang gestiona finanzas personales para un usuario en Ecuador (USD, IVA 15%). D
 | IVA              | 15% (parametrizable)                                  |
 | Bancos           | No exponen APIs públicas — sin integración automática |
 | Score crediticio | Equifax Ecuador (carga manual de JSON)                |
-| Tarjetas         | Diners + Titanium con cupo compartido de $900         |
+| Tarjetas         | Diners + Titanium con cupo compartido de $2000         |
 
 ## Módulos de Requerimientos
 

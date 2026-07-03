@@ -19,7 +19,7 @@ Filtra por módulo o busca por texto — estos son los requerimientos representa
   { id: 'RF-08', module: 'Transacciones', text: 'Registrar ingresos, gastos y transferencias con actualización atómica de saldos (ACID)', priority: 'Alta' },
   { id: 'RF-09', module: 'Transacciones', text: 'IVA 15% en dos modos: incluido (desglose: neto = monto/1.15) y adicional con casilla Aplica IVA (total = base × 1.15, compras digitales)', priority: 'Alta' },
   { id: 'RF-12', module: 'Transacciones', text: 'Transacciones recurrentes con ciclo de vida de 5 estados (patrón State)', priority: 'Media' },
-  { id: 'RF-17', module: 'Cuentas', text: 'Cupo compartido entre tarjetas Diners y Titanium ($900 consolidado)', priority: 'Alta' },
+  { id: 'RF-17', module: 'Cuentas', text: 'Cupo compartido entre tarjetas Diners y Titanium ($2000 consolidado)', priority: 'Alta' },
   { id: 'RF-20', module: 'Categorías', text: 'Jerarquía de 2 niveles: 9 categorías de gasto y 3 de ingreso del sistema + personalizadas', priority: 'Media' },
   { id: 'RF-24', module: 'Presupuestos', text: 'Presupuestos por categoría y periodo (mensual/semanal/anual) con alertas al 80% y 100%', priority: 'Alta' },
   { id: 'RF-28', module: 'Metas', text: '3 tipos de meta de ahorro con cálculo de aporte mensual necesario y fecha estimada', priority: 'Media' },
