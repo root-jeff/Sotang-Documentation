@@ -21,6 +21,22 @@ No es un desarrollo secuencial: backend, aplicación móvil, portal de documenta
   { name: 'Bot Conversacional', progress: 10, status: 'Diseñado', color: '#f59e0b', detail: 'Los 8 comandos especificados y el flujo webhook documentado. Implementación arranca al cerrar el módulo de transacciones.' },
 ]"/>
 
+## La metodología detrás del avance
+
+<Reveal>
+
+El proyecto se gestiona con **Kanban en iteraciones de dos semanas** — elegido sobre Scrum y XP por criterios concretos del contexto:
+
+| Criterio | Scrum | Kanban (elegido) | XP |
+|----------|:---:|:---:|:---:|
+| Tamaño del equipo | 3–9 personas | 1–N personas | 2+ (pair programming) |
+| Overhead de ceremonias para 1 persona | Alto | Bajo | Medio |
+| Repriorizar ante bloqueos de infraestructura | Dentro del sprint | En cualquier momento | Parcial |
+
+Un desarrollador único con seis frentes paralelos necesita repriorizar sin romper una Sprint Goal: cuando K3s bloquea el despliegue, el flujo se mueve al backend sin ceremonia. Cada entregable pasa por una **Definición de Completado**: endpoint implementado, errores manejados (400/401/404/500), schema TypeBox definido, migración reversible aplicada y documentación en la colección Postman.
+
+</Reveal>
+
 ## Cómo fluye un request en el MVP hoy
 
 <Reveal>

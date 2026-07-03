@@ -1,34 +1,70 @@
 /* ─── PlantUML: dark mode filter ─────────────────────────────────────────── */
-.vp-doc img[src*="plantuml"] {
-  border-radius: 10px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.10);
-  max-width: 100%;
-  transition: filter 0.25s ease, transform 0.2s ease;
-  cursor: zoom-in;
-  display: block;
-  margin: 1.5rem auto;
-}
-.vp-doc img[src*="plantuml"]:hover {
-  transform: scale(1.01);
-}
 .dark .vp-doc img[src*="plantuml"] {
   filter: invert(92%) hue-rotate(180deg);
-  box-shadow: 0 2px 12px rgba(0,0,0,.45);
 }
 
-/* ─── Mermaid zoom ────────────────────────────────────────────────────────── */
-.zoomable-mermaid {
-  cursor: zoom-in;
-  width: 100%;
+/* ─── Diagramas navegables (mermaid + PlantUML): arrastrar/zoom estilo GitHub ── */
+.diagram-panzoom-wrap {
+  position: relative;
+  border: 1px solid var(--vp-c-divider);
   border-radius: 10px;
+  background: var(--vp-c-bg-soft);
   box-shadow: 0 2px 12px rgba(0,0,0,.10);
-  transition: transform 0.2s;
-  display: block;
-  margin: 1.5rem auto;
+  margin: 1.5rem 0;
+  overflow: hidden;
 }
-.zoomable-mermaid:hover { transform: scale(1.01); }
-.medium-zoom-overlay { z-index: 200; }
-.medium-zoom-image--opened { z-index: 201; }
+.dark .diagram-panzoom-wrap {
+  box-shadow: 0 2px 12px rgba(0,0,0,.45);
+}
+.diagram-panzoom-viewport {
+  overflow: hidden;
+  touch-action: none;
+  padding: 1.25rem;
+}
+.diagram-panzoom-target {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto !important;
+  cursor: grab;
+  user-select: none;
+}
+.diagram-panzoom-target:active {
+  cursor: grabbing;
+}
+.diagram-panzoom-toolbar {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 4px;
+  opacity: .55;
+  transition: opacity .15s ease;
+}
+.diagram-panzoom-wrap:hover .diagram-panzoom-toolbar {
+  opacity: 1;
+}
+.dpz-btn {
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--vp-c-divider);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  font-size: 15px;
+  cursor: pointer;
+}
+.dpz-btn:hover {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+}
+.dpz-reset {
+  font-size: 12px;
+}
 
 /* ─── Tipografía y prosa ──────────────────────────────────────────────────── */
 .vp-doc h1 {

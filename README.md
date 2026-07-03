@@ -54,7 +54,7 @@ Los archivos generados se encontrarán en el directorio .vitepress/dist.
 
 *   [VitePress](https://vitepress.dev/) - Generador de sitios estáticos.
 *   [Mermaid.js](https://mermaid.js.org/) - Diagramas como código (C4, ERD).
-*   [Medium-Zoom](https://github.com/francoischalifour/medium-zoom) - Interactividad de imágenes.
+*   [@panzoom/panzoom](https://github.com/timmywil/panzoom) - Navegación (arrastrar/zoom) de diagramas.
 *   [IcePanel](https://icepanel.io/) - Modelado C4 interactivo de alto nivel.
 
 ---

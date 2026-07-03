@@ -77,6 +77,16 @@ Recorre el flujo principal paso a paso:
   ]"
 />
 
+## El registro rápido por Telegram, en vivo
+
+<Reveal>
+
+El mismo CU-001 tiene un segundo camino de entrada: sin abrir la app, directo desde el chat:
+
+<TelegramFlowAnim />
+
+</Reveal>
+
 <Reveal>
 
 ::: tip Los otros casos de uso documentados
