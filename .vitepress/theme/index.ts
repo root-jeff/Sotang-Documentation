@@ -53,6 +53,34 @@ export default {
   setup() {
     const route = useRoute();
 
+    // Scroll suave con inercia (estilo sitios modernos) en vez del salto
+    // "por líneas" del scroll nativo del navegador con la rueda del mouse.
+    let lenis: Lenis | null = null;
+    let rafId = 0;
+
+    onMounted(() => {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (prefersReducedMotion) return;
+
+      lenis = new Lenis({
+        duration: 1.1,
+        easing: (t: number) => 1 - Math.pow(1 - t, 3),
+        smoothWheel: true,
+      });
+
+      const raf = (time: number) => {
+        lenis?.raf(time);
+        rafId = requestAnimationFrame(raf);
+      };
+      rafId = requestAnimationFrame(raf);
+    });
+
+    onUnmounted(() => {
+      cancelAnimationFrame(rafId);
+      lenis?.destroy();
+      lenis = null;
+    });
+
     // Envuelve un diagrama (SVG de mermaid o <img> de PlantUML) en un
     // contenedor navegable: arrastrar para desplazar, rueda/pellizco para
     // hacer zoom y botones +/−/reset, igual que la vista de diagramas de GitHub.
@@ -109,42 +137,41 @@ export default {
           '.vp-doc img[src*="plantuml"]:not(.zoom-processed)'
         );
         plantUmlImgs.forEach(img => setupPanzoom(img));
+
+        // El wrap agrega padding/borde alrededor del diagrama, lo que cambia
+        // la altura del documento. Sin este resize, Lenis quedaba con los
+        // límites de scroll desactualizados y "corregía" de golpe — el
+        // salto/parpadeo que se sentía al aparecer un diagrama.
+        lenis?.resize();
       });
     };
 
-    onMounted(() => {
-      setTimeout(initZoom, 800);
-      setTimeout(initZoom, 2200);
-    });
+    // Mermaid y las imágenes de PlantUML se renderizan de forma asíncrona y
+    // en momentos impredecibles. Antes se usaban setTimeout a ciegas (800ms,
+    // 2200ms), que chocaban con el scroll suave de Lenis apenas la altura de
+    // la página cambiaba. Un MutationObserver reacciona justo cuando el
+    // diagrama aparece en el DOM, sin adivinar tiempos.
+    let docObserver: MutationObserver | null = null;
+    let debounceId = 0;
+    const scheduleInitZoom = () => {
+      clearTimeout(debounceId);
+      debounceId = window.setTimeout(initZoom, 150);
+    };
 
-    watch(() => route.path, () => nextTick(() => setTimeout(initZoom, 800)));
+    const attachObserver = () => {
+      docObserver?.disconnect();
+      const container = document.querySelector('.vp-doc');
+      if (!container) return;
+      docObserver = new MutationObserver(scheduleInitZoom);
+      docObserver.observe(container, { childList: true, subtree: true });
+      scheduleInitZoom();
+    };
 
-    // Scroll suave con inercia (estilo sitios modernos) en vez del salto
-    // "por líneas" del scroll nativo del navegador con la rueda del mouse.
-    let lenis: Lenis | null = null;
-    let rafId = 0;
-
-    onMounted(() => {
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (prefersReducedMotion) return;
-
-      lenis = new Lenis({
-        duration: 1.1,
-        easing: (t: number) => 1 - Math.pow(1 - t, 3),
-        smoothWheel: true,
-      });
-
-      const raf = (time: number) => {
-        lenis?.raf(time);
-        rafId = requestAnimationFrame(raf);
-      };
-      rafId = requestAnimationFrame(raf);
-    });
-
+    onMounted(() => nextTick(attachObserver));
+    watch(() => route.path, () => nextTick(attachObserver));
     onUnmounted(() => {
-      cancelAnimationFrame(rafId);
-      lenis?.destroy();
-      lenis = null;
+      docObserver?.disconnect();
+      clearTimeout(debounceId);
     });
   },
 };
