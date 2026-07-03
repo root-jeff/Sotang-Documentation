@@ -14,6 +14,26 @@ Haz clic en cada capa para ver cómo protege el sistema:
 
 <SecurityLayers />
 
+## Una petición real vs. un intento malicioso, en vivo
+
+<Reveal>
+
+Así viaja un request autenticado a través de las capas — y en dónde se corta exactamente un intento de fuerza bruta o de acceder a datos ajenos:
+
+<AuthFlowAnim />
+
+</Reveal>
+
+## El backup nocturno, en vivo
+
+<Reveal>
+
+Cada noche a las 3 AM, sin intervención manual, los datos financieros salen cifrados de la Raspberry Pi hacia Google Drive:
+
+<BackupFlowAnim />
+
+</Reveal>
+
 ## Decisiones de seguridad destacadas
 
 <Reveal>

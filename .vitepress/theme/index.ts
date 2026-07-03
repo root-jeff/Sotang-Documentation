@@ -1,5 +1,7 @@
 import DefaultTheme from 'vitepress/theme';
-import mediumZoom from 'medium-zoom';
+// Import directo al build ESM: bajo SSR, Vite resuelve el campo "main" del
+// paquete (UMD) en vez de "module", lo que rompe el export default.
+import Panzoom from '@panzoom/panzoom/dist/panzoom.es.js';
 import { onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vitepress';
 import './custom.css';
@@ -18,6 +20,9 @@ import PhaseTimeline from './components/PhaseTimeline.vue';
 import BeforeAfter from './components/BeforeAfter.vue';
 import IvaCalc from './components/IvaCalc.vue';
 import FlowAnim from './components/FlowAnim.vue';
+import AuthFlowAnim from './components/AuthFlowAnim.vue';
+import BackupFlowAnim from './components/BackupFlowAnim.vue';
+import TelegramFlowAnim from './components/TelegramFlowAnim.vue';
 import TrackBoard from './components/TrackBoard.vue';
 
 export default {
@@ -37,37 +42,67 @@ export default {
     app.component('BeforeAfter', BeforeAfter);
     app.component('IvaCalc', IvaCalc);
     app.component('FlowAnim', FlowAnim);
+    app.component('AuthFlowAnim', AuthFlowAnim);
+    app.component('BackupFlowAnim', BackupFlowAnim);
+    app.component('TelegramFlowAnim', TelegramFlowAnim);
     app.component('TrackBoard', TrackBoard);
   },
   setup() {
     const route = useRoute();
 
+    // Envuelve un diagrama (SVG de mermaid o <img> de PlantUML) en un
+    // contenedor navegable: arrastrar para desplazar, rueda/pellizco para
+    // hacer zoom y botones +/−/reset, igual que la vista de diagramas de GitHub.
+    const setupPanzoom = (el: HTMLElement) => {
+      if (el.classList.contains('zoom-processed')) return;
+      el.classList.add('zoom-processed', 'diagram-panzoom-target');
+
+      const wrap = document.createElement('div');
+      wrap.className = 'diagram-panzoom-wrap';
+
+      const viewport = document.createElement('div');
+      viewport.className = 'diagram-panzoom-viewport';
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'diagram-panzoom-toolbar';
+      toolbar.innerHTML =
+        '<button type="button" class="dpz-btn dpz-zoom-out" title="Alejar" aria-label="Alejar">−</button>' +
+        '<button type="button" class="dpz-btn dpz-reset" title="Restablecer" aria-label="Restablecer">⤢</button>' +
+        '<button type="button" class="dpz-btn dpz-zoom-in" title="Acercar" aria-label="Acercar">+</button>';
+
+      el.parentNode!.insertBefore(wrap, el);
+      viewport.appendChild(el);
+      wrap.appendChild(viewport);
+      wrap.appendChild(toolbar);
+
+      // Sin "contain": con 'outside' Panzoom nunca deja el elemento más
+      // pequeño que el contenedor, lo que bloqueaba el zoom-out en diagramas
+      // grandes. Sin contención el usuario puede arrastrar libremente y
+      // "Restablecer" siempre recentra la vista.
+      const instance = Panzoom(el, {
+        maxScale: 8,
+        minScale: 0.2,
+        cursor: 'grab',
+      });
+
+      viewport.addEventListener('wheel', instance.zoomWithWheel);
+      viewport.addEventListener('dblclick', () => instance.reset());
+      toolbar.querySelector('.dpz-zoom-in')!.addEventListener('click', () => instance.zoomIn());
+      toolbar.querySelector('.dpz-zoom-out')!.addEventListener('click', () => instance.zoomOut());
+      toolbar.querySelector('.dpz-reset')!.addEventListener('click', () => instance.reset());
+    };
+
     const initZoom = () => {
       nextTick(() => {
-        // Mermaid SVGs → convertir a img para medium-zoom
-        const svgs = document.querySelectorAll('.vp-doc .mermaid svg');
-        svgs.forEach(svg => {
-          if (!svg.classList.contains('zoom-processed')) {
-            const xml = new XMLSerializer().serializeToString(svg);
-            const svg64 = btoa(unescape(encodeURIComponent(xml)));
-            const img = document.createElement('img');
-            img.src = 'data:image/svg+xml;base64,' + svg64;
-            img.className = 'zoomable-mermaid';
-            svg.style.display = 'none';
-            svg.parentNode!.insertBefore(img, svg);
-            svg.classList.add('zoom-processed');
-            mediumZoom(img, { background: 'var(--vp-c-bg)', margin: 24 });
-          }
-        });
+        const mermaidSvgs = document.querySelectorAll<SVGSVGElement>(
+          '.vp-doc .mermaid svg:not(.zoom-processed)'
+        );
+        mermaidSvgs.forEach(svg => setupPanzoom(svg as unknown as HTMLElement));
 
-        // PlantUML images → medium-zoom directo
         const plantUmlImgs = document.querySelectorAll<HTMLImageElement>(
           '.vp-doc img[src*="plantuml"]:not(.zoom-processed)'
         );
-        plantUmlImgs.forEach(img => {
-          img.classList.add('zoom-processed');
-          mediumZoom(img, { background: 'var(--vp-c-bg)', margin: 24 });
-        });
+        plantUmlImgs.forEach(img => setupPanzoom(img));
       });
     };
 
