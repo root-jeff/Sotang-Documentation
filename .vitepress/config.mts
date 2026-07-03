@@ -4,7 +4,7 @@ import markdownItPlantUml from "markdown-it-plantuml";
 
 export default withMermaid(
   defineConfig({
-    base: "/Sotang-Dev/",
+    base: "/Sotang-Documentation/",
     cleanUrls: true,
     srcExclude: ["**/README.md", "**/ROADMAP.md"],
 
@@ -12,7 +12,7 @@ export default withMermaid(
     description: "Documentación técnica del ecosistema Sotang — finanzas personales 100% locales",
 
     head: [
-      ["link", { rel: "icon", href: "/Sotang-Dev/sotang_icon.png" }],
+      ["link", { rel: "icon", href: "/Sotang-Documentation/sotang_icon.png" }],
     ],
 
     markdown: {
@@ -133,7 +133,7 @@ export default withMermaid(
       socialLinks: [
         {
           icon: "github",
-          link: "https://github.com/root-jeff/Sotang-Dev",
+          link: "https://github.com/root-jeff/Sotang-Documentation",
         },
       ],
 
