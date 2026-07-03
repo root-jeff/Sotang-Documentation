@@ -4,8 +4,41 @@ import { onMounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vitepress';
 import './custom.css';
 
+import PresHero from './components/PresHero.vue';
+import StatGrid from './components/StatGrid.vue';
+import Reveal from './components/Reveal.vue';
+import ArchLayers from './components/ArchLayers.vue';
+import PatternCards from './components/PatternCards.vue';
+import RiskMatrix from './components/RiskMatrix.vue';
+import MetricBars from './components/MetricBars.vue';
+import UseCaseStepper from './components/UseCaseStepper.vue';
+import ReqExplorer from './components/ReqExplorer.vue';
+import SecurityLayers from './components/SecurityLayers.vue';
+import PhaseTimeline from './components/PhaseTimeline.vue';
+import BeforeAfter from './components/BeforeAfter.vue';
+import IvaCalc from './components/IvaCalc.vue';
+import FlowAnim from './components/FlowAnim.vue';
+import TrackBoard from './components/TrackBoard.vue';
+
 export default {
   extends: DefaultTheme,
+  enhanceApp({ app }) {
+    app.component('PresHero', PresHero);
+    app.component('StatGrid', StatGrid);
+    app.component('Reveal', Reveal);
+    app.component('ArchLayers', ArchLayers);
+    app.component('PatternCards', PatternCards);
+    app.component('RiskMatrix', RiskMatrix);
+    app.component('MetricBars', MetricBars);
+    app.component('UseCaseStepper', UseCaseStepper);
+    app.component('ReqExplorer', ReqExplorer);
+    app.component('SecurityLayers', SecurityLayers);
+    app.component('PhaseTimeline', PhaseTimeline);
+    app.component('BeforeAfter', BeforeAfter);
+    app.component('IvaCalc', IvaCalc);
+    app.component('FlowAnim', FlowAnim);
+    app.component('TrackBoard', TrackBoard);
+  },
   setup() {
     const route = useRoute();
 

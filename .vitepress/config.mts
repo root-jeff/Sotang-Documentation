@@ -4,7 +4,7 @@ import markdownItPlantUml from "markdown-it-plantuml";
 
 export default withMermaid(
   defineConfig({
-    base: "/Sotang-Documentation/",
+    base: "/Sotang-Dev/",
     cleanUrls: true,
     srcExclude: ["**/README.md", "**/ROADMAP.md"],
 
@@ -12,7 +12,7 @@ export default withMermaid(
     description: "Documentación técnica del ecosistema Sotang — finanzas personales 100% locales",
 
     head: [
-      ["link", { rel: "icon", href: "/Sotang-Documentation/sotang_icon.png" }],
+      ["link", { rel: "icon", href: "/Sotang-Dev/sotang_icon.png" }],
     ],
 
     markdown: {
@@ -30,6 +30,7 @@ export default withMermaid(
 
       nav: [
         { text: "Home", link: "/" },
+        { text: "Presentación", link: "/presentacion/" },
         {
           text: "Architecture",
           items: [
@@ -101,6 +102,24 @@ export default withMermaid(
             ],
           },
         ],
+        "/presentacion/": [
+          {
+            text: "Presentación del Proyecto",
+            items: [
+              { text: "Portada", link: "/presentacion/" },
+              { text: "1. El Problema", link: "/presentacion/problema" },
+              { text: "2. Requerimientos", link: "/presentacion/requerimientos" },
+              { text: "3. Casos de Uso", link: "/presentacion/casos-de-uso" },
+              { text: "4. Arquitectura", link: "/presentacion/arquitectura" },
+              { text: "5. Seguridad", link: "/presentacion/seguridad" },
+              { text: "6. Patrones de Diseño", link: "/presentacion/patrones" },
+              { text: "7. Métricas de Calidad", link: "/presentacion/metricas" },
+              { text: "8. Riesgos y Análisis Formal", link: "/presentacion/riesgos" },
+              { text: "9. Mejoras del Diseño", link: "/presentacion/mejoras" },
+              { text: "10. Roadmap y Conclusiones", link: "/presentacion/conclusiones" },
+            ],
+          },
+        ],
         "/requerimientos/": [
           {
             text: "Requirements",
@@ -114,7 +133,7 @@ export default withMermaid(
       socialLinks: [
         {
           icon: "github",
-          link: "https://github.com/root-jeff/Sotang-Documentation",
+          link: "https://github.com/root-jeff/Sotang-Dev",
         },
       ],
 
