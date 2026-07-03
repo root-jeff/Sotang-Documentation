@@ -39,7 +39,7 @@ Cada tarjeta muestra el **problema real** del dominio; haz clic para voltear y v
   },
   {
     name: 'Composite', category: 'Estructural', icon: '05',
-    problem: 'Diners y Titanium comparten un cupo de $900: un gasto en una reduce el disponible de la otra. Un modelo plano de cuentas no puede expresarlo.',
+    problem: 'Diners y Titanium comparten un cupo de $2000: un gasto en una reduce el disponible de la otra. Un modelo plano de cuentas no puede expresarlo.',
     solution: 'AccountGroup contiene las sub-tarjetas y calcula el disponible consolidado: 900 − usado_diners − usado_titanium.',
     location: 'modules/accounts/account-group.ts'
   },

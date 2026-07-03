@@ -78,7 +78,7 @@ Compruébalo en ambos modos:
 
 Dos ejemplos concretos que el modelo de datos de las apps comerciales no puede expresar:
 
-- **El cupo compartido**: Diners Club y Titanium comparten un cupo único de $900 — un gasto en una reduce el disponible de la otra. Las apps las tratan como cuentas aisladas.
+- **El cupo compartido**: Diners Club y Titanium comparten un cupo único de $2000 — un gasto en una reduce el disponible de la otra. Las apps las tratan como cuentas aisladas.
 - **Las deudas informales**: prestar dinero a familiares y amigos es práctica común; ninguna app las gestiona con estados (pendiente, parcial, cobrado, incobrable) ni recordatorios de cobro.
 
 </Reveal>
