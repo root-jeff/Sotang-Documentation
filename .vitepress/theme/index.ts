@@ -24,6 +24,7 @@ import AuthFlowAnim from './components/AuthFlowAnim.vue';
 import BackupFlowAnim from './components/BackupFlowAnim.vue';
 import TelegramFlowAnim from './components/TelegramFlowAnim.vue';
 import TrackBoard from './components/TrackBoard.vue';
+import AdrAccordion from './components/AdrAccordion.vue';
 
 export default {
   extends: DefaultTheme,
@@ -46,6 +47,7 @@ export default {
     app.component('BackupFlowAnim', BackupFlowAnim);
     app.component('TelegramFlowAnim', TelegramFlowAnim);
     app.component('TrackBoard', TrackBoard);
+    app.component('AdrAccordion', AdrAccordion);
   },
   setup() {
     const route = useRoute();
