@@ -1,3 +1,11 @@
+/* ─── Scroll suave nativo: solo afecta saltos por ancla/TOC, no la rueda ──── */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 /* ─── PlantUML: dark mode filter ─────────────────────────────────────────── */
 .dark .vp-doc img[src*="plantuml"] {
   filter: invert(92%) hue-rotate(180deg);
